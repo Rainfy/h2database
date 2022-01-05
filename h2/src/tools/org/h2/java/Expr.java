@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -80,7 +80,7 @@ class CallExpr extends ExprBase {
         StringBuilder buff = new StringBuilder();
         initMethod();
         if (method.isIgnore) {
-            if (args.size() == 0) {
+            if (args.isEmpty()) {
                 // ignore
             } else if (args.size() == 1) {
                 buff.append(args.get(0));
@@ -394,7 +394,7 @@ class NewExpr extends ExprBase {
     public String asString() {
         boolean refCount = type.refCount;
         StringBuilder buff = new StringBuilder();
-        if (arrayInitExpr.size() > 0) {
+        if (!arrayInitExpr.isEmpty()) {
             if (refCount) {
                 if (classObj.isPrimitive) {
                     buff.append("ptr< array< " + classObj + " > >");

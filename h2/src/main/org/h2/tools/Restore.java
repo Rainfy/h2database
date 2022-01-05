@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -20,13 +20,13 @@ import org.h2.util.Tool;
 
 /**
  * Restores a H2 database by extracting the database files from a .zip file.
- * @h2.resource
  */
 public class Restore extends Tool {
 
     /**
-     * Options are case sensitive. Supported options are:
+     * Options are case sensitive. Supported options
      * <table>
+     * <caption>Supported options</caption>
      * <tr><td>[-help] or [-?]</td>
      * <td>Print the list of options</td></tr>
      * <tr><td>[-file &lt;filename&gt;]</td>
@@ -38,9 +38,9 @@ public class Restore extends Tool {
      * <tr><td>[-quiet]</td>
      * <td>Do not print progress information</td></tr>
      * </table>
-     * @h2.resource
      *
      * @param args the command line arguments
+     * @throws SQLException on failure
      */
     public static void main(String... args) throws SQLException {
         new Restore().runTool(args);
@@ -117,10 +117,6 @@ public class Restore extends Tool {
      * @return the database name or null
      */
     private static String getDatabaseNameFromFileName(String fileName) {
-        if (fileName.endsWith(Constants.SUFFIX_PAGE_FILE)) {
-            return fileName.substring(0,
-                    fileName.length() - Constants.SUFFIX_PAGE_FILE.length());
-        }
         if (fileName.endsWith(Constants.SUFFIX_MV_FILE)) {
             return fileName.substring(0,
                     fileName.length() - Constants.SUFFIX_MV_FILE.length());

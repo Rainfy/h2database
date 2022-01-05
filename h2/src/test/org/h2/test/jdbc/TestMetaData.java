@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -61,7 +61,6 @@ public class TestMetaData extends TestDb {
         testGeneral();
         testAllowLiteralsNone();
         testClientInfo();
-        testSessionsUncommitted();
         testQueryStatistics();
         testQueryStatisticsLimit();
     }
@@ -358,7 +357,7 @@ public class TestMetaData extends TestDb {
                 "PRECISION,SCALE", false, false, (short) 0, (short) 9, 0);
         testTypeInfo(rs, "ENUM", Types.OTHER, MAX_STRING_LENGTH, "'", "'", "ELEMENT [,...]", false, false, (short) 0,
                 (short) 0, 0);
-        testTypeInfo(rs, "GEOMETRY", Types.OTHER, MAX_STRING_LENGTH, "'", "'", "TYPE,SRID", false, false, (short) 0,
+        testTypeInfo(rs, "GEOMETRY", Types.OTHER, Integer.MAX_VALUE, "'", "'", "TYPE,SRID", false, false, (short) 0,
                 (short) 0, 0);
         testTypeInfo(rs, "JSON", Types.OTHER, MAX_STRING_LENGTH, "JSON '", "'", "LENGTH", true, false, (short) 0,
                 (short) 0, 0);
@@ -380,13 +379,13 @@ public class TestMetaData extends TestDb {
         conn.close();
     }
 
-    private void testTypeInfo(ResultSet rs, String name, int type, int precision, String prefix, String suffix,
+    private void testTypeInfo(ResultSet rs, String name, int type, long precision, String prefix, String suffix,
             String params, boolean caseSensitive, boolean fixed, short minScale, short maxScale, int radix)
                     throws SQLException {
         assertTrue(rs.next());
         assertEquals(name, rs.getString(1));
         assertEquals(type, rs.getInt(2));
-        assertEquals(precision, rs.getInt(3));
+        assertEquals(precision, rs.getLong(3));
         assertEquals(prefix, rs.getString(4));
         assertEquals(suffix, rs.getString(5));
         assertEquals(params, rs.getString(6));
@@ -1258,8 +1257,8 @@ public class TestMetaData extends TestDb {
                 pageStoreSettingsCount++;
             }
         }
-        assertEquals(config.mvStore ? 2 : 0, mvStoreSettingsCount);
-        assertEquals(config.mvStore ? 0 : 3, pageStoreSettingsCount);
+        assertEquals(2, mvStoreSettingsCount);
+        assertEquals(0, pageStoreSettingsCount);
 
         testMore();
 
@@ -1333,32 +1332,6 @@ public class TestMetaData extends TestDb {
             assertEquals(1, count);
         }
         rs.close();
-        conn.close();
-        deleteDb("metaData");
-    }
-
-    private void testSessionsUncommitted() throws SQLException {
-        if (config.mvStore || config.memory) {
-            return;
-        }
-        Connection conn = getConnection("metaData");
-        conn.setAutoCommit(false);
-        Statement stat = conn.createStatement();
-        stat.execute("create table test(id int)");
-        stat.execute("begin transaction");
-        for (int i = 0; i < 6; i++) {
-            stat.execute("insert into test values (1)");
-        }
-        ResultSet rs = stat.executeQuery("select contains_uncommitted " +
-                "from INFORMATION_SCHEMA.SESSIONS");
-        rs.next();
-        assertEquals(true, rs.getBoolean(1));
-        rs.close();
-        stat.execute("commit");
-        rs = stat.executeQuery("select contains_uncommitted " +
-                "from INFORMATION_SCHEMA.SESSIONS");
-        rs.next();
-        assertEquals(false, rs.getBoolean(1));
         conn.close();
         deleteDb("metaData");
     }

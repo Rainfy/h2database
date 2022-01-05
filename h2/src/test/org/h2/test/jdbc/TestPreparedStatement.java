@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.sql.Array;
 import java.sql.Connection;
@@ -88,6 +89,7 @@ public class TestPreparedStatement extends TestDb {
         testCancelReuse(conn);
         testCoalesce(conn);
         testPreparedStatementMetaData(conn);
+        testBigDecimal(conn);
         testDate(conn);
         testDate8(conn);
         testTime8(conn);
@@ -393,6 +395,8 @@ public class TestPreparedStatement extends TestDb {
     private void testUnknownDataType(Connection conn) throws SQLException {
         assertThrows(ErrorCode.UNKNOWN_DATA_TYPE_1, conn).
             prepareStatement("SELECT * FROM (SELECT ? FROM DUAL)");
+        assertThrows(ErrorCode.UNKNOWN_DATA_TYPE_1, conn).
+            prepareStatement("VALUES BITAND(?, ?)");
         PreparedStatement prep = conn.prepareStatement("SELECT -?");
         prep.setInt(1, 1);
         execute(prep);
@@ -644,6 +648,21 @@ public class TestPreparedStatement extends TestDb {
         case 6:
             prep.setObject(1, value, H2Type.INTEGER, 0);
         }
+    }
+
+    private void testBigDecimal(Connection conn) throws SQLException {
+        PreparedStatement prep = conn.prepareStatement("SELECT ?, ?");
+        BigDecimal bd = new BigDecimal("12300").setScale(-2, RoundingMode.UNNECESSARY);
+        prep.setBigDecimal(1, bd);
+        prep.setObject(2, bd);
+        ResultSet rs = prep.executeQuery();
+        rs.next();
+        bd = rs.getBigDecimal(1);
+        assertEquals(12300, bd.intValue());
+        assertEquals(0, bd.scale());
+        bd = rs.getBigDecimal(2);
+        assertEquals(12300, bd.intValue());
+        assertEquals(0, bd.scale());
     }
 
     private void testDate(Connection conn) throws SQLException {

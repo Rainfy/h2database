@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -37,7 +37,8 @@ public class MVStoreTool {
     /**
      * Runs this tool.
      * Options are case sensitive. Supported options are:
-     * <table summary="command line options">
+     * <table>
+     * <caption>Command line options</caption>
      * <tr><td>[-dump &lt;fileName&gt;]</td>
      * <td>Dump the contends of the file</td></tr>
      * <tr><td>[-info &lt;fileName&gt;]</td>
@@ -516,13 +517,9 @@ public class MVStoreTool {
             MVMap<String, String> targetMeta = target.getMetaMap();
             for (Entry<String, String> m : sourceMeta.entrySet()) {
                 String key = m.getKey();
-                if (key.startsWith(DataUtils.META_CHUNK)) {
-                    // ignore
-                } else if (key.startsWith(DataUtils.META_MAP)) {
+                if (key.startsWith(DataUtils.META_MAP)) {
                     // ignore
                 } else if (key.startsWith(DataUtils.META_NAME)) {
-                    // ignore
-                } else if (key.startsWith(DataUtils.META_ROOT)) {
                     // ignore
                 } else {
                     targetMeta.put(key, m.getValue());
@@ -548,6 +545,7 @@ public class MVStoreTool {
                 MVMap<Object, Object> sourceMap = source.openMap(mapName, mp);
                 MVMap<Object, Object> targetMap = target.openMap(mapName, mp);
                 targetMap.copyFrom(sourceMap);
+                targetMeta.put(MVMap.getMapKey(targetMap.getId()), sourceMeta.get(MVMap.getMapKey(sourceMap.getId())));
             }
             // this will end hacky mode of operation with incomplete pages
             // end ensure that all pages are saved

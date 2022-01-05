@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -29,6 +29,10 @@ public final class JdbcBlob extends JdbcLob implements Blob {
 
     /**
      * INTERNAL
+     * @param conn it belongs to
+     * @param value of
+     * @param state of the LOB
+     * @param id of the trace object
      */
     public JdbcBlob(JdbcConnection conn, Value value, State state, int id) {
         super(conn, value, state, TraceObject.BLOB, id);

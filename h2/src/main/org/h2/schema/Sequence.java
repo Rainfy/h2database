@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -140,8 +140,8 @@ public final class Sequence extends SchemaObject {
      * Allows the base value, start value, min value, max value, increment and
      * cache size to be updated atomically, including atomic validation. Useful
      * because setting these attributes one after the other could otherwise
-     * result in an invalid sequence state (e.g. min value > max value, start
-     * value < min value, etc).
+     * result in an invalid sequence state (e.g. min value &gt; max value, start
+     * value &lt; min value, etc).
      * @param baseValue
      *            the base value ({@code null} if restart is not requested)
      * @param startValue
@@ -522,12 +522,12 @@ public final class Sequence extends SchemaObject {
             // locked it) because it must be committed immediately, otherwise
             // other threads can not access the sys table.
             SessionLocal sysSession = database.getSystemSession();
-            synchronized (database.isMVStore() ? sysSession : database) {
+            synchronized (sysSession) {
                 flushInternal(sysSession);
                 sysSession.commit(false);
             }
         } else {
-            synchronized (database.isMVStore() ? session : database) {
+            synchronized (session) {
                 flushInternal(session);
             }
         }

@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <!--
-Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 and the EPL 1.0 (https://h2database.com/html/license.html).
 Initial Developer: H2 Group
 -->
@@ -146,18 +146,6 @@ than reading from separate files, but slows down the performance of operations
 that don't involve this column.
 </p>
 
-<h3>Large Object Compression</h3>
-<p>
-The following feature is only available for the PageStore storage engine.
-For the MVStore engine (the default for H2 version 1.4.x),
-append <code>;COMPRESS=TRUE</code> to the database URL instead.
-CLOB and BLOB values can be compressed by using
-<a href="commands.html#set_compress_lob" class="notranslate" >SET COMPRESS_LOB</a>.
-The LZF algorithm is faster but needs more disk space. By default compression is disabled, which usually speeds up write
-operations. If you store many large compressible values such as XML, HTML, text, and uncompressed binary files,
-then compressing can save a lot of disk space (sometimes more than 50%), and read operations may even be faster.
-</p>
-
 <h2 id="linked_tables">Linked Tables</h2>
 <p>
 This database supports linked tables, which means tables that don't exist in the current database but
@@ -226,7 +214,7 @@ See the <a href="commands.html">Commands</a> for details.
 Transaction isolation is provided for all data manipulation language (DML) statements.
 </p>
 <p>
-The default MVStore engine supports read uncommitted, read committed, repeatable read, snapshot,
+H2 supports read uncommitted, read committed, repeatable read, snapshot,
 and serializable (partially, see below) isolation levels:
 </p>
 <ul>
@@ -261,30 +249,6 @@ and serializable (partially, see below) isolation levels:
     <code>SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE</code>
 </li>
 </ul>
-<p>
-The PageStore engine supports read uncommitted, read committed, and serializable isolation levels:
-</p>
-<ul>
-<li><b>Read uncommitted</b><br />
-    This level means that transaction isolation is disabled.
-    This level is not supported by PageStore engine if multi-threaded mode is enabled.
-    To enable, execute the SQL statement
-    <code>SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ UNCOMMITTED</code>
-</li>
-<li><b>Read committed</b><br />
-    This is the default level.
-    Read locks are released immediately after executing the statement, but write locks are kept until the transaction commits.
-    To enable, execute the SQL statement
-    <code>SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED</code>
-</li>
-<li><b>Serializable</b><br />
-    Both read locks and write locks are kept until the transaction commits.
-    To enable, execute the SQL statement
-    <code>SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE</code>
-</li>
-</ul>
-<p>If repeatable read isolation level is requested when using a PageStore engine it is replaced
-with serializable isolation level.</p>
 <ul>
 <li><b>Dirty reads</b><br />
     Means a connection can read uncommitted changes made by another connection.<br />
@@ -303,29 +267,13 @@ with serializable isolation level.</p>
 
 <h3 id="mvcc">Multi-Version Concurrency Control (MVCC)</h3>
 <p>
-With default MVStore engine delete, insert and update operations only issue a shared lock on the table.
+Insert and update operations only issue a shared lock on the table.
 An exclusive lock is still used when adding or removing columns or when dropping the table.
 Connections only 'see' committed data, and own changes. That means, if connection A updates
 a row but doesn't commit this change yet, connection B will see the old value.
 Only when the change is committed, the new value is visible by other connections
 (read committed). If multiple connections concurrently try to lock or update the same row, the
 database waits until it can apply the change, but at most until the lock timeout expires.
-</p>
-
-<h3>Table Level Locking (PageStore engine)</h3>
-<p>
-With PageStore engine to make sure all connections only see consistent data, table level locking is used.
-This mechanism does not allow high concurrency, but is very fast.
-Shared locks and exclusive locks are supported.
-Before reading from a table, the database tries to add a shared lock to the table
-(this is only possible if there is no exclusive lock on the object by another connection).
-If the shared lock is added successfully, the table can be read. It is allowed that
-other connections also have a shared lock on the same object. If a connection wants
-to write to a table (update or delete a row), an exclusive lock is required. To get the
-exclusive lock, other connection must not have any locks on the object. After the
-connection commits, all locks are released.
-This database keeps all locks in memory.
-When a lock is released, and multiple connections are waiting for it, one of them is picked at random.
 </p>
 
 <h3>Lock Timeout</h3>
@@ -505,14 +453,17 @@ The following tokens are keywords in H2:
 <table class="main">
 <thead>
 <tr>
-<th>Keyword</th>
-<th>H2</th>
-<th>SQL:&#8203;2016</th>
-<th>SQL:&#8203;2011</th>
-<th>SQL:&#8203;2008</th>
-<th>SQL:&#8203;2003</th>
-<th>SQL:&#8203;1999</th>
-<th>SQL-92</th>
+<th rowspan="2">Keyword</th>
+<th rowspan="2">H2</th>
+<th colspan="6" style="text-align: center">SQL Standard</th>
+</tr>
+<tr>
+<th>2016</th>
+<th>2011</th>
+<th>2008</th>
+<th>2003</th>
+<th>1999</th>
+<th>92</th>
 </tr>
 </thead>
 <tbody>
@@ -606,8 +557,6 @@ The following tokens are keywords in H2:
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>INTERSECT</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
-<tr><td>INTERSECTS</td>
-<td>+</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 <tr><td>INTERVAL</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>IS</td>
@@ -623,13 +572,13 @@ The following tokens are keywords in H2:
 <tr><td>LIKE</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>LIMIT</td>
-<td>+</td><td></td><td></td><td></td><td></td><td>+</td><td></td></tr>
+<td>MS</td><td></td><td></td><td></td><td></td><td>+</td><td></td></tr>
 <tr><td>LOCALTIME</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td></tr>
 <tr><td>LOCALTIMESTAMP</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td></tr>
 <tr><td>MINUS</td>
-<td>+</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<td>MS</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 <tr><td>MINUTE</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>MONTH</td>
@@ -687,13 +636,13 @@ The following tokens are keywords in H2:
 <tr><td>TO</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>TOP</td>
-<td>CS</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<td>MS<br/>CS</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 <tr><td>TRAILING</td>
 <td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>TRUE</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>UESCAPE</td>
-<td>+</td><td></td><td></td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td><td></td></tr>
 <tr><td>UNION</td>
 <td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
 <tr><td>UNIQUE</td>
@@ -723,15 +672,30 @@ The following tokens are keywords in H2:
 </tbody>
 </table>
 <p>
-Some keywords in H2 are context-sensitive (CS), such keywords may be used as identifiers in some places,
+Mode-sensitive keywords (MS) are keywords only in some compatibility modes.
+</p>
+<ul><li>LIMIT is a keywords only in Regular, Legacy, DB2, HSQLDB, MariaDB, MySQL, and PostgreSQL compatibility modes.
+It is an identifier in Strict, Derby, MSSQLServer, and Oracle compatibility modes.
+</li><li>MINUS is a keyword only in Regular, Legacy, DB2, HSQLDB, and Oracle compatibility modes.
+It is an identifier in Strict, Derby, MSSQLServer, MariaDB, MySQL, and PostgreSQL compatibility modes.
+</li><li>TOP is a context-sensitive keyword (can be either keyword or identifier)
+only in Regular, Legacy, HSQLDB, and MSSQLServer compatibility modes.
+It is an identifier unconditionally in Strict, Derby, DB2, MariaDB, MySQL, Oracle, and PostgreSQL compatibility modes.
+</li></ul>
+<p>
+Context-sensitive keywords (CS) can be used as identifiers in some places,
 but cannot be used as identifiers in others.
+Normal keywords (+) are always treated as keywords.
+</p>
+<p>
 Most keywords in H2 are also reserved (+) or non-reserved (NR) words in the SQL Standard.
 Newer versions of H2 may have more keywords than older ones.
+Reserved words from the SQL Standard are potential candidates for keywords in future versions.
 </p>
 
 <p>There is a compatibility setting
 <a href="commands.html#set_non_keywords"><code>SET NON_KEYWORDS</code></a>
-that can be used as a temporary workaround for applications that use keywords as unquoted identifiers.</p>.
+that can be used as a temporary workaround for applications that use keywords as unquoted identifiers.</p>
 
 <h2 id="standards_compliance">Standards Compliance</h2>
 <p>

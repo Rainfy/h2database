@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,8 +14,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
-
 import org.h2.bnf.context.DbContextRule;
+import org.h2.command.dml.Help;
 import org.h2.tools.Csv;
 import org.h2.util.StringUtils;
 import org.h2.util.Utils;
@@ -45,6 +45,8 @@ public class Bnf {
      *
      * @param csv if not specified, the help.csv is used
      * @return a new instance
+     * @throws SQLException on failure
+     * @throws IOException on failure
      */
     public static Bnf getInstance(Reader csv) throws SQLException, IOException {
         Bnf bnf = new Bnf();
@@ -93,7 +95,7 @@ public class Bnf {
                 continue;
             }
             String topic = rs.getString("TOPIC");
-            syntax = rs.getString("SYNTAX").trim();
+            syntax = Help.stripAnnotationsFromSyntax(rs.getString("SYNTAX"));
             currentTopic = section;
             tokens = tokenize();
             index = 0;

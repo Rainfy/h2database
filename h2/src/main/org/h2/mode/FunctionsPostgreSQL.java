@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -77,7 +77,11 @@ public final class FunctionsPostgreSQL extends ModeFunction {
 
     private static final int PG_STAT_GET_NUMSCANS = ARRAY_TO_STRING + 1;
 
-    private static final HashMap<String, FunctionInfo> FUNCTIONS = new HashMap<>();
+    private static final int TO_DATE = PG_STAT_GET_NUMSCANS + 1;
+
+    private static final int TO_TIMESTAMP = TO_DATE + 1;
+
+    private static final HashMap<String, FunctionInfo> FUNCTIONS = new HashMap<>(32);
 
     static {
         FUNCTIONS.put("CURRENT_DATABASE",
@@ -114,6 +118,10 @@ public final class FunctionsPostgreSQL extends ModeFunction {
                 new FunctionInfo("ARRAY_TO_STRING", ARRAY_TO_STRING, VAR_ARGS, Value.VARCHAR, false, true));
         FUNCTIONS.put("PG_STAT_GET_NUMSCANS",
                 new FunctionInfo("PG_STAT_GET_NUMSCANS", PG_STAT_GET_NUMSCANS, 1, Value.INTEGER, true, true));
+        FUNCTIONS.put("TO_DATE", new FunctionInfo("TO_DATE", TO_DATE, 2, Value.DATE, true, true));
+        FUNCTIONS.put("TO_TIMESTAMP",
+                new FunctionInfo("TO_TIMESTAMP", TO_TIMESTAMP, 2, Value.TIMESTAMP_TZ, true, true));
+
     }
 
     /**
@@ -274,6 +282,12 @@ public final class FunctionsPostgreSQL extends ModeFunction {
         case PG_STAT_GET_NUMSCANS:
             // Not implemented
             result = ValueInteger.get(0);
+            break;
+        case TO_DATE:
+            result = ToDateParser.toDate(session, v0.getString(), v1.getString()).convertToDate(session);
+            break;
+        case TO_TIMESTAMP:
+            result = ToDateParser.toTimestampTz(session, v0.getString(), v1.getString());
             break;
         default:
             throw DbException.getInternalError("type=" + info.type);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -72,12 +72,7 @@ public class TestOpenClose extends TestDb {
         if (config.memory || config.reopen) {
             return;
         }
-        String fn = getBaseDir() + "/openClose2";
-        if (config.mvStore) {
-            fn += Constants.SUFFIX_MV_FILE;
-        } else {
-            fn += Constants.SUFFIX_PAGE_FILE;
-        }
+        String fn = getBaseDir() + "/openClose2" + Constants.SUFFIX_MV_FILE;
         FileUtils.delete("split:" + fn);
         Connection conn;
         String url = getURL("jdbc:h2:split:18:" + getBaseDir() + "/openClose2", true);
@@ -89,7 +84,7 @@ public class TestOpenClose extends TestDb {
         c.position(c.size() * 2 - 1);
         c.write(ByteBuffer.wrap(new byte[1]));
         c.close();
-        assertThrows(config.mvStore ? ErrorCode.IO_EXCEPTION_1 : ErrorCode.IO_EXCEPTION_2, () -> getConnection(url));
+        assertThrows(ErrorCode.IO_EXCEPTION_1, () -> getConnection(url));
         FileUtils.delete("split:" + fn);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -91,7 +91,7 @@ abstract class ValueStringBase extends Value {
 
     @Override
     public final boolean getBoolean() {
-        String s = value;
+        String s = value.trim();
         if (s.equalsIgnoreCase("true") || s.equalsIgnoreCase("t") || s.equalsIgnoreCase("yes")
                 || s.equalsIgnoreCase("y")) {
             return true;

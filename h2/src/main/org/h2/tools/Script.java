@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -14,13 +14,13 @@ import org.h2.util.Tool;
 
 /**
  * Creates a SQL script file by extracting the schema and data of a database.
- * @h2.resource
  */
 public class Script extends Tool {
 
     /**
-     * Options are case sensitive. Supported options are:
+     * Options are case sensitive.
      * <table>
+     * <caption>Supported options</caption>
      * <tr><td>[-help] or [-?]</td>
      * <td>Print the list of options</td></tr>
      * <tr><td>[-url "&lt;url&gt;"]</td>
@@ -36,9 +36,9 @@ public class Script extends Tool {
      * <tr><td>[-quiet]</td>
      * <td>Do not print progress information</td></tr>
      * </table>
-     * @h2.resource
      *
      * @param args the command line arguments
+     * @throws SQLException on failure
      */
     public static void main(String... args) throws SQLException {
         new Script().runTool(args);
@@ -108,6 +108,7 @@ public class Script extends Tool {
      * @param fileName the target file name
      * @param options1 the options before the file name (may be an empty string)
      * @param options2 the options after the file name (may be an empty string)
+     * @throws SQLException on failure
      */
     public static void process(String url, String user, String password, String fileName, String options1,
             String options2) throws SQLException {
@@ -124,6 +125,7 @@ public class Script extends Tool {
      * @param fileName the target file name
      * @param options1 the options before the file name
      * @param options2 the options after the file name
+     * @throws SQLException on failure
      */
     public static void process(Connection conn,
             String fileName, String options1, String options2) throws SQLException {

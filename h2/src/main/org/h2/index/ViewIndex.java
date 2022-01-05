@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -98,7 +98,7 @@ public class ViewIndex extends Index implements SpatialIndex {
         this.createSession = session;
         columns = new Column[0];
         if (!recursive) {
-            query = getQuery(session, masks, filters, filter, sortOrder);
+            query = getQuery(session, masks);
         }
         if (recursive || view.getTopQuery() != null) {
             evaluatedAt = Long.MAX_VALUE;
@@ -284,8 +284,7 @@ public class ViewIndex extends Index implements SpatialIndex {
         return query;
     }
 
-    private Query getQuery(SessionLocal session, int[] masks,
-            TableFilter[] filters, int filter, SortOrder sortOrder) {
+    private Query getQuery(SessionLocal session, int[] masks) {
         Query q = (Query) session.prepare(querySQL, true, true);
         if (masks == null) {
             return q;

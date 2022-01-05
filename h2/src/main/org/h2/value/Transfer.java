@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -35,6 +35,9 @@ import org.h2.util.MathUtils;
 import org.h2.util.NetUtils;
 import org.h2.util.StringUtils;
 import org.h2.util.Utils;
+import org.h2.value.lob.LobData;
+import org.h2.value.lob.LobDataDatabase;
+import org.h2.value.lob.LobDataFetchOnDemand;
 
 /**
  * The transfer class is used to send and receive Value objects.
@@ -158,6 +161,7 @@ public final class Transfer {
     /**
      * Initialize the transfer object. This method will try to open an input and
      * output stream.
+     * @throws IOException on failure
      */
     public synchronized void init() throws IOException {
         if (socket != null) {
@@ -172,6 +176,7 @@ public final class Transfer {
 
     /**
      * Write pending changes.
+     * @throws IOException on failure
      */
     public void flush() throws IOException {
         out.flush();
@@ -182,6 +187,7 @@ public final class Transfer {
      *
      * @param x the value
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeBoolean(boolean x) throws IOException {
         out.writeByte((byte) (x ? 1 : 0));
@@ -192,6 +198,7 @@ public final class Transfer {
      * Read a boolean.
      *
      * @return the value
+     * @throws IOException on failure
      */
     public boolean readBoolean() throws IOException {
         return in.readByte() != 0;
@@ -202,6 +209,7 @@ public final class Transfer {
      *
      * @param x the value
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeByte(byte x) throws IOException {
         out.writeByte(x);
@@ -212,6 +220,7 @@ public final class Transfer {
      * Read a byte.
      *
      * @return the value
+     * @throws IOException on failure
      */
     public byte readByte() throws IOException {
         return in.readByte();
@@ -222,6 +231,7 @@ public final class Transfer {
      *
      * @param x the value
      * @return itself
+     * @throws IOException on failure
      */
     private Transfer writeShort(short x) throws IOException {
         out.writeShort(x);
@@ -232,6 +242,7 @@ public final class Transfer {
      * Read a short.
      *
      * @return the value
+     * @throws IOException on failure
      */
     private short readShort() throws IOException {
         return in.readShort();
@@ -242,6 +253,7 @@ public final class Transfer {
      *
      * @param x the value
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeInt(int x) throws IOException {
         out.writeInt(x);
@@ -252,6 +264,7 @@ public final class Transfer {
      * Read an int.
      *
      * @return the value
+     * @throws IOException on failure
      */
     public int readInt() throws IOException {
         return in.readInt();
@@ -262,6 +275,7 @@ public final class Transfer {
      *
      * @param x the value
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeLong(long x) throws IOException {
         out.writeLong(x);
@@ -272,6 +286,7 @@ public final class Transfer {
      * Read a long.
      *
      * @return the value
+     * @throws IOException on failure
      */
     public long readLong() throws IOException {
         return in.readLong();
@@ -282,6 +297,7 @@ public final class Transfer {
      *
      * @param i the value
      * @return itself
+     * @throws IOException on failure
      */
     private Transfer writeDouble(double i) throws IOException {
         out.writeDouble(i);
@@ -303,6 +319,7 @@ public final class Transfer {
      * Read a double.
      *
      * @return the value
+     * @throws IOException on failure
      */
     private double readDouble() throws IOException {
         return in.readDouble();
@@ -312,6 +329,7 @@ public final class Transfer {
      * Read a float.
      *
      * @return the value
+     * @throws IOException on failure
      */
     private float readFloat() throws IOException {
         return in.readFloat();
@@ -322,6 +340,7 @@ public final class Transfer {
      *
      * @param s the value
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeString(String s) throws IOException {
         if (s == null) {
@@ -337,6 +356,7 @@ public final class Transfer {
      * Read a string.
      *
      * @return the value
+     * @throws IOException on failure
      */
     public String readString() throws IOException {
         int len = in.readInt();
@@ -357,6 +377,7 @@ public final class Transfer {
      *
      * @param data the value
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeBytes(byte[] data) throws IOException {
         if (data == null) {
@@ -375,6 +396,7 @@ public final class Transfer {
      * @param off the offset
      * @param len the length
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeBytes(byte[] buff, int off, int len) throws IOException {
         out.write(buff, off, len);
@@ -385,6 +407,7 @@ public final class Transfer {
      * Read a byte array.
      *
      * @return the value
+     * @throws IOException on failure
      */
     public byte[] readBytes() throws IOException {
         int len = readInt();
@@ -402,6 +425,7 @@ public final class Transfer {
      * @param buff the target buffer
      * @param off the offset
      * @param len the number of bytes to read
+     * @throws IOException on failure
      */
     public void readBytes(byte[] buff, int off, int len) throws IOException {
         in.readFully(buff, off, len);
@@ -430,6 +454,7 @@ public final class Transfer {
      *
      * @param type data type information
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeTypeInfo(TypeInfo type) throws IOException {
         if (version >= Constants.TCP_PROTOCOL_VERSION_20) {
@@ -590,6 +615,7 @@ public final class Transfer {
      * Read a type information.
      *
      * @return the type information
+     * @throws IOException on failure
      */
     public TypeInfo readTypeInfo() throws IOException {
         if (version >= Constants.TCP_PROTOCOL_VERSION_20) {
@@ -737,6 +763,7 @@ public final class Transfer {
      * Write a value.
      *
      * @param v the value
+     * @throws IOException on failure
      */
     public void writeValue(Value v) throws IOException {
         int type = v.getValueType();
@@ -869,23 +896,24 @@ public final class Transfer {
             break;
         case Value.BLOB: {
             writeInt(BLOB);
-            ValueLob lob = (ValueLob) v;
-            if (lob instanceof ValueLobDatabase) {
-                ValueLobDatabase lobDb = (ValueLobDatabase) lob;
+            ValueBlob lob = (ValueBlob) v;
+            LobData lobData = lob.getLobData();
+            long length = lob.octetLength();
+            if (lobData instanceof LobDataDatabase) {
+                LobDataDatabase lobDataDatabase = (LobDataDatabase) lobData;
                 writeLong(-1);
-                writeInt(lobDb.getTableId());
-                writeLong(lobDb.getLobId());
-                writeBytes(calculateLobMac(lobDb.getLobId()));
-                writeLong(lob.getType().getPrecision());
+                writeInt(lobDataDatabase.getTableId());
+                writeLong(lobDataDatabase.getLobId());
+                writeBytes(calculateLobMac(lobDataDatabase.getLobId()));
+                writeLong(length);
                 break;
             }
-            long length = v.getType().getPrecision();
             if (length < 0) {
                 throw DbException.get(
                         ErrorCode.CONNECTION_BROKEN_1, "length=" + length);
             }
             writeLong(length);
-            long written = IOUtils.copyAndCloseInput(v.getInputStream(), out);
+            long written = IOUtils.copyAndCloseInput(lob.getInputStream(), out);
             if (written != length) {
                 throw DbException.get(
                         ErrorCode.CONNECTION_BROKEN_1, "length:" + length + " written:" + written);
@@ -895,23 +923,27 @@ public final class Transfer {
         }
         case Value.CLOB: {
             writeInt(CLOB);
-            ValueLob lob = (ValueLob) v;
-            if (lob instanceof ValueLobDatabase) {
-                ValueLobDatabase lobDb = (ValueLobDatabase) lob;
+            ValueClob lob = (ValueClob) v;
+            LobData lobData = lob.getLobData();
+            long charLength = lob.charLength();
+            if (lobData instanceof LobDataDatabase) {
+                LobDataDatabase lobDataDatabase = (LobDataDatabase) lobData;
                 writeLong(-1);
-                writeInt(lobDb.getTableId());
-                writeLong(lobDb.getLobId());
-                writeBytes(calculateLobMac(lobDb.getLobId()));
-                writeLong(lob.getType().getPrecision());
+                writeInt(lobDataDatabase.getTableId());
+                writeLong(lobDataDatabase.getLobId());
+                writeBytes(calculateLobMac(lobDataDatabase.getLobId()));
+                if (version >= Constants.TCP_PROTOCOL_VERSION_20) {
+                    writeLong(lob.octetLength());
+                }
+                writeLong(charLength);
                 break;
             }
-            long length = v.getType().getPrecision();
-            if (length < 0) {
+            if (charLength < 0) {
                 throw DbException.get(
-                        ErrorCode.CONNECTION_BROKEN_1, "length=" + length);
+                        ErrorCode.CONNECTION_BROKEN_1, "length=" + charLength);
             }
-            writeLong(length);
-            Reader reader = v.getReader();
+            writeLong(charLength);
+            Reader reader = lob.getReader();
             Data.copyString(reader, out);
             writeInt(LOB_MAGIC);
             break;
@@ -1007,6 +1039,7 @@ public final class Transfer {
      *
      * @param columnType the data type of value, or {@code null}
      * @return the value
+     * @throws IOException on failure
      */
     public Value readValue(TypeInfo columnType) throws IOException {
         int type = readInt();
@@ -1076,8 +1109,7 @@ public final class Transfer {
                 long id = readLong();
                 byte[] hmac = readBytes();
                 long precision = readLong();
-                return ValueLobFetchOnDemand.create(Value.BLOB, session.getDataHandler(), tableId, id, hmac, //
-                        precision);
+                return new ValueBlob(new LobDataFetchOnDemand(session.getDataHandler(), tableId, id, hmac), precision);
             }
             Value v = session.getDataHandler().getLobStorage().createBlob(in, length);
             int magic = readInt();
@@ -1088,22 +1120,23 @@ public final class Transfer {
             return v;
         }
         case CLOB: {
-            long length = readLong();
-            if (length == -1) {
+            long charLength = readLong();
+            if (charLength == -1) {
                 // fetch-on-demand LOB
                 int tableId = readInt();
                 long id = readLong();
                 byte[] hmac = readBytes();
-                long precision = readLong();
-                return ValueLobFetchOnDemand.create(Value.CLOB, session.getDataHandler(), tableId, id, hmac, //
-                        precision);
+                long octetLength = version >= Constants.TCP_PROTOCOL_VERSION_20 ? readLong() : -1L;
+                charLength = readLong();
+                return new ValueClob(new LobDataFetchOnDemand(session.getDataHandler(), tableId, id, hmac),
+                        octetLength, charLength);
             }
-            if (length < 0) {
+            if (charLength < 0) {
                 throw DbException.get(
-                        ErrorCode.CONNECTION_BROKEN_1, "length="+ length);
+                        ErrorCode.CONNECTION_BROKEN_1, "length="+ charLength);
             }
             Value v = session.getDataHandler().getLobStorage().
-                    createClob(new DataReader(in), length);
+                    createClob(new DataReader(in), charLength);
             int magic = readInt();
             if (magic != LOB_MAGIC) {
                 throw DbException.get(
@@ -1184,6 +1217,7 @@ public final class Transfer {
      * Read a row count.
      *
      * @return the row count
+     * @throws IOException on failure
      */
     public long readRowCount() throws IOException {
         return version >= Constants.TCP_PROTOCOL_VERSION_20 ? readLong() : readInt();
@@ -1194,6 +1228,7 @@ public final class Transfer {
      *
      * @param rowCount the row count
      * @return itself
+     * @throws IOException on failure
      */
     public Transfer writeRowCount(long rowCount) throws IOException {
         return version >= Constants.TCP_PROTOCOL_VERSION_20 ? writeLong(rowCount)
@@ -1231,6 +1266,7 @@ public final class Transfer {
      * Open a new connection to the same address and port as this one.
      *
      * @return the new transfer object
+     * @throws IOException on failure
      */
     public Transfer openNewConnection() throws IOException {
         InetAddress address = socket.getInetAddress();

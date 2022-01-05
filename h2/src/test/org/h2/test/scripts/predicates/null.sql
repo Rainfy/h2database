@@ -1,4 +1,4 @@
--- Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (https://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -183,6 +183,18 @@ EXPLAIN SELECT A, B FROM TEST WHERE (A, NULL, B) IS NULL;
 
 EXPLAIN SELECT A, B FROM TEST WHERE (A, NULL, B, NULL) IS NULL;
 >> SELECT "A", "B" FROM "PUBLIC"."TEST" /* PUBLIC.TEST_A_B_IDX: A IS NULL AND B IS NULL */ WHERE ROW ("A", "B") IS NULL
+
+DROP TABLE TEST;
+> ok
+
+CREATE TABLE TEST(I INTEGER) AS VALUES 1;
+> ok
+
+
+SELECT I FROM TEST WHERE _ROWID_ IS NULL;
+> I
+> -
+> rows: 0
 
 DROP TABLE TEST;
 > ok

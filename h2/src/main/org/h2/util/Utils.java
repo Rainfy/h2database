@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -378,6 +378,7 @@ public class Utils {
      *
      * @param name the name of the resource
      * @return the resource data
+     * @throws IOException on failure
      */
     public static byte[] getResource(String name) throws IOException {
         byte[] data = RESOURCES.get(name);
@@ -434,6 +435,7 @@ public class Utils {
      *            "java.lang.System.gc"
      * @param params the method parameters
      * @return the return value from this call
+     * @throws Exception on failure
      */
     public static Object callStaticMethod(String classAndMethod,
             Object... params) throws Exception {
@@ -452,6 +454,7 @@ public class Utils {
      * @param methodName a string with the method name
      * @param params the method parameters
      * @return the return value from this call
+     * @throws Exception on failure
      */
     public static Object callMethod(
             Object instance,
@@ -491,6 +494,7 @@ public class Utils {
      * @param className a string with the entire class, eg. "java.lang.Integer"
      * @param params the constructor parameters
      * @return the newly created object
+     * @throws Exception on failure
      */
     public static Object newInstance(String className, Object... params)
             throws Exception {

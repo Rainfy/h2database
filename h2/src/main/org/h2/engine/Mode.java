@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,7 +22,7 @@ import org.h2.value.Value;
 public class Mode {
 
     public enum ModeEnum {
-        REGULAR, DB2, Derby, MariaDB, MSSQLServer, HSQLDB, MySQL, Oracle, PostgreSQL
+        REGULAR, STRICT, LEGACY, DB2, Derby, MariaDB, MSSQLServer, HSQLDB, MySQL, Oracle, PostgreSQL
     }
 
     /**
@@ -399,6 +399,11 @@ public class Mode {
     public boolean limit;
 
     /**
+     * Whether MINUS can be used as EXCEPT.
+     */
+    public boolean minusIsExcept;
+
+    /**
      * Whether IDENTITY pseudo data type is supported.
      */
     public boolean identityDataType;
@@ -435,6 +440,11 @@ public class Mode {
      */
     public boolean groupByColumnIndex;
 
+    /**
+     * Allow to compare numeric with BOOLEAN.
+     */
+    public boolean numericWithBooleanComparison;
+
     private final String name;
 
     private final ModeEnum modeEnum;
@@ -445,8 +455,38 @@ public class Mode {
         mode.dateTimeValueWithinTransaction = true;
         mode.topInSelect = true;
         mode.limit = true;
+        mode.minusIsExcept = true;
         mode.identityDataType = true;
+        mode.serialDataTypes = true;
         mode.autoIncrementClause = true;
+        add(mode);
+
+        mode = new Mode(ModeEnum.STRICT);
+        mode.dateTimeValueWithinTransaction = true;
+        add(mode);
+
+        mode = new Mode(ModeEnum.LEGACY);
+        // Features of REGULAR mode
+        mode.allowEmptyInPredicate = true;
+        mode.dateTimeValueWithinTransaction = true;
+        mode.topInSelect = true;
+        mode.limit = true;
+        mode.minusIsExcept = true;
+        mode.identityDataType = true;
+        mode.serialDataTypes = true;
+        mode.autoIncrementClause = true;
+        // Legacy identity and sequence features
+        mode.identityClause = true;
+        mode.updateSequenceOnManualIdentityInsertion = true;
+        mode.identityColumnsHaveDefaultOnNull = true;
+        mode.nextvalAndCurrvalPseudoColumns = true;
+        // Legacy DML features
+        mode.topInDML = true;
+        mode.mergeWhere = true;
+        // Legacy DDL features
+        mode.createUniqueConstraintForReferencedColumns = true;
+        // Legacy numeric with boolean comparison
+        mode.numericWithBooleanComparison = true;
         add(mode);
 
         mode = new Mode(ModeEnum.DB2);
@@ -465,6 +505,8 @@ public class Mode {
         mode.expressionNames = ExpressionNames.NUMBER;
         mode.viewExpressionNames = ViewExpressionNames.EXCEPTION;
         mode.limit = true;
+        mode.minusIsExcept = true;
+        mode.numericWithBooleanComparison = true;
         add(mode);
 
         mode = new Mode(ModeEnum.Derby);
@@ -489,6 +531,8 @@ public class Mode {
         mode.expressionNames = ExpressionNames.C_NUMBER;
         mode.topInSelect = true;
         mode.limit = true;
+        mode.minusIsExcept = true;
+        mode.numericWithBooleanComparison = true;
         add(mode);
 
         mode = new Mode(ModeEnum.MSSQLServer);
@@ -523,6 +567,7 @@ public class Mode {
         mode.topInSelect = true;
         mode.topInDML = true;
         mode.identityClause = true;
+        mode.numericWithBooleanComparison = true;
         add(mode);
 
         mode = new Mode(ModeEnum.MariaDB);
@@ -548,6 +593,7 @@ public class Mode {
         mode.autoIncrementClause = true;
         mode.typeByNameMap.put("YEAR", DataType.getDataType(Value.SMALLINT));
         mode.groupByColumnIndex = true;
+        mode.numericWithBooleanComparison = true;
         add(mode);
 
         mode = new Mode(ModeEnum.MySQL);
@@ -576,6 +622,7 @@ public class Mode {
         mode.autoIncrementClause = true;
         mode.typeByNameMap.put("YEAR", DataType.getDataType(Value.SMALLINT));
         mode.groupByColumnIndex = true;
+        mode.numericWithBooleanComparison = true;
         add(mode);
 
         mode = new Mode(ModeEnum.Oracle);
@@ -594,6 +641,7 @@ public class Mode {
         mode.charAndByteLengthUnits = true;
         mode.nextvalAndCurrvalPseudoColumns = true;
         mode.mergeWhere = true;
+        mode.minusIsExcept = true;
         mode.expressionNames = ExpressionNames.ORIGINAL_SQL;
         mode.viewExpressionNames = ViewExpressionNames.EXCEPTION;
         mode.typeByNameMap.put("BINARY_FLOAT", DataType.getDataType(Value.REAL));
@@ -626,7 +674,6 @@ public class Mode {
         // Enumerate all H2 types NOT supported by PostgreSQL:
         Set<String> disallowedTypes = new java.util.HashSet<>();
         disallowedTypes.add("NUMBER");
-        disallowedTypes.add("IDENTITY");
         disallowedTypes.add("TINYINT");
         disallowedTypes.add("BLOB");
         disallowedTypes.add("VARCHAR_IGNORECASE");

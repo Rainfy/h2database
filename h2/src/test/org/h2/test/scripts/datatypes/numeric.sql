@@ -1,4 +1,4 @@
--- Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (https://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -6,7 +6,7 @@
 CREATE MEMORY TABLE TEST(
     N1 NUMERIC, N2 NUMERIC(10), N3 NUMERIC(10, 0), N4 NUMERIC(10, 2),
     D1 DECIMAL, D2 DECIMAL(10), D3 DECIMAL(10, 0), D4 DECIMAL(10, 2), D5 DEC,
-    X1 NUMBER);
+    X1 NUMBER(10), X2 NUMBER(10, 2));
 > ok
 
 SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_PRECISION, NUMERIC_PRECISION_RADIX, NUMERIC_SCALE,
@@ -23,8 +23,9 @@ SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_PRECISION, NUMERIC_PRECISION_RADIX, NUMER
 > D3          NUMERIC   10                10                      0             DECIMAL            10                         0
 > D4          NUMERIC   10                10                      2             DECIMAL            10                         2
 > D5          NUMERIC   100000            10                      0             DECIMAL            null                       null
-> X1          NUMERIC   100000            10                      0             NUMERIC            null                       null
-> rows (ordered): 10
+> X1          NUMERIC   10                10                      0             NUMERIC            10                         null
+> X2          NUMERIC   10                10                      2             NUMERIC            10                         2
+> rows (ordered): 11
 
 DROP TABLE TEST;
 > ok
@@ -166,4 +167,22 @@ SET TRUNCATE_LARGE_LENGTH FALSE;
 > ok
 
 DROP TABLE T1, T2;
+> ok
+
+SET MODE Oracle;
+> ok
+
+CREATE TABLE TEST(N NUMERIC(2, 1));
+> ok
+
+INSERT INTO TEST VALUES 20;
+> exception VALUE_TOO_LONG_2
+
+INSERT INTO TEST VALUES CAST(20 AS NUMERIC(2));
+> exception VALUE_TOO_LONG_2
+
+DROP TABLE TEST;
+> ok
+
+SET MODE Regular;
 > ok

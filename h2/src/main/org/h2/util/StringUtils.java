@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -539,24 +539,6 @@ public class StringUtils {
             }
         }
         return builder.toString();
-    }
-
-    /**
-     * Join specified strings and add them to the specified string builder.
-     *
-     * @param builder string builder
-     * @param strings strings to join
-     * @param separator separator
-     * @return the specified string builder
-     */
-    public static StringBuilder join(StringBuilder builder, ArrayList<String> strings, String separator) {
-        for (int i = 0, l = strings.size(); i < l; i++) {
-            if (i > 0) {
-                builder.append(separator);
-            }
-            builder.append(strings.get(i));
-        }
-        return builder;
     }
 
     /**

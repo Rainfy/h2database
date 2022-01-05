@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,16 +22,15 @@ import org.h2.engine.Constants;
 import org.h2.engine.DbObject;
 import org.h2.engine.Right;
 import org.h2.engine.SessionLocal;
-import org.h2.engine.UndoLogRecord;
 import org.h2.expression.ExpressionVisitor;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.message.Trace;
 import org.h2.result.DefaultRow;
+import org.h2.result.LocalResult;
 import org.h2.result.Row;
 import org.h2.result.RowFactory;
-import org.h2.result.RowList;
 import org.h2.result.SearchRow;
 import org.h2.result.SimpleRowValue;
 import org.h2.result.SortOrder;
@@ -59,6 +58,21 @@ public abstract class Table extends SchemaObject {
      * The table type that means this table is a regular persistent table.
      */
     public static final int TYPE_MEMORY = 1;
+
+    /**
+     * Read lock.
+     */
+    public static final int READ_LOCK = 0;
+
+    /**
+     * Write lock.
+     */
+    public static final int WRITE_LOCK = 1;
+
+    /**
+     * Exclusive lock.
+     */
+    public static final int EXCLUSIVE_LOCK = 2;
 
     /**
      * The columns of this table.
@@ -121,12 +135,11 @@ public abstract class Table extends SchemaObject {
      * This method waits until the lock is granted.
      *
      * @param session the session
-     * @param exclusive true for write locks, false for read locks
-     * @param forceLockEvenInMvcc lock even in the MVCC mode
+     * @param lockType the type of lock
      * @return true if the table was already exclusively locked by this session.
      * @throws DbException if a lock timeout occurred
      */
-    public boolean lock(SessionLocal session, boolean exclusive, boolean forceLockEvenInMvcc) {
+    public boolean lock(SessionLocal session, int lockType) {
         return false;
     }
 
@@ -523,16 +536,16 @@ public abstract class Table extends SchemaObject {
      * @param rows a list of row pairs of the form old row, new row, old row,
      *            new row,...
      */
-    public void updateRows(Prepared prepared, SessionLocal session, RowList rows) {
+    public void updateRows(Prepared prepared, SessionLocal session, LocalResult rows) {
         // in case we need to undo the update
         SessionLocal.Savepoint rollback = session.setSavepoint();
         // remove the old rows
         int rowScanCount = 0;
-        for (rows.reset(); rows.hasNext();) {
+        while (rows.next()) {
             if ((++rowScanCount & 127) == 0) {
                 prepared.checkCanceled();
             }
-            Row o = rows.next();
+            Row o = rows.currentRowForTable();
             rows.next();
             try {
                 removeRow(session, o);
@@ -543,15 +556,15 @@ public abstract class Table extends SchemaObject {
                 }
                 throw e;
             }
-            session.log(this, UndoLogRecord.DELETE, o);
         }
         // add the new rows
-        for (rows.reset(); rows.hasNext();) {
+        rows.reset();
+        while (rows.next()) {
             if ((++rowScanCount & 127) == 0) {
                 prepared.checkCanceled();
             }
             rows.next();
-            Row n = rows.next();
+            Row n = rows.currentRowForTable();
             try {
                 addRow(session, n);
             } catch (DbException e) {
@@ -560,7 +573,6 @@ public abstract class Table extends SchemaObject {
                 }
                 throw e;
             }
-            session.log(this, UndoLogRecord.INSERT, n);
         }
     }
 
@@ -674,25 +686,11 @@ public abstract class Table extends SchemaObject {
      * Create a new row for this table.
      *
      * @param data the values
-     * @param memory whether the row is in memory
+     * @param memory the estimated memory usage in bytes
      * @return the created row
      */
     public Row createRow(Value[] data, int memory) {
         return rowFactory.createRow(data, memory);
-    }
-
-    /**
-     * Create a new row for this table.
-     *
-     * @param data the values
-     * @param memory whether the row is in memory
-     * @param key the key
-     * @return the created row
-     */
-    public Row createRow(Value[] data, int memory, long key) {
-        Row row = rowFactory.createRow(data, memory);
-        row.setKey(key);
-        return row;
     }
 
     public Row getTemplateRow() {
@@ -954,16 +952,20 @@ public abstract class Table extends SchemaObject {
      *
      * @param session the session
      * @param row the row
+     * @param fromTrigger {@code true} if row was modified by INSERT or UPDATE trigger
      */
-    public void convertUpdateRow(SessionLocal session, Row row) {
+    public void convertUpdateRow(SessionLocal session, Row row, boolean fromTrigger) {
         int length = columns.length, generated = 0;
         for (int i = 0; i < length; i++) {
             Value value = row.getValue(i);
             Column column = columns[i];
             if (column.isGenerated()) {
                 if (value != null) {
-                    throw DbException.get(ErrorCode.GENERATED_COLUMN_CANNOT_BE_ASSIGNED_1,
-                            column.getSQLWithTable(new StringBuilder(), TRACE_SQL_FLAGS).toString());
+                    if (!fromTrigger) {
+                        throw DbException.get(ErrorCode.GENERATED_COLUMN_CANNOT_BE_ASSIGNED_1,
+                                column.getSQLWithTable(new StringBuilder(), TRACE_SQL_FLAGS).toString());
+                    }
+                    row.setValue(i, null);
                 }
                 generated++;
                 continue;
@@ -1402,7 +1404,11 @@ public abstract class Table extends SchemaObject {
         this.isHidden = hidden;
     }
 
-    public boolean isMVStore() {
+    /**
+     * Views, function tables, links, etc. do not support locks
+     * @return true if table supports row-level locks
+     */
+    public boolean isRowLockable() {
         return false;
     }
 

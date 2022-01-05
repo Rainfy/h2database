@@ -1,4 +1,4 @@
--- Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (https://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -53,12 +53,10 @@ EXPLAIN DELETE FROM TEST WHERE ID <= 12 FETCH FIRST 2 ROWS ONLY;
 >> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2: ID <= 12 */ WHERE "ID" <= 12 FETCH FIRST 2 ROWS ONLY
 
 EXPLAIN DELETE FROM TEST FETCH FIRST 1 ROW ONLY;
-#+mvStore#>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ FETCH FIRST ROW ONLY
-#-mvStore#>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ FETCH FIRST ROW ONLY
+>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ FETCH FIRST ROW ONLY
 
 EXPLAIN DELETE FROM TEST;
-#+mvStore#>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
-#-mvStore#>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */
+>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
 
 TABLE TEST;
 >> 13

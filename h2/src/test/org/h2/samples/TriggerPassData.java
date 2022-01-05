@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -28,6 +28,7 @@ public class TriggerPassData implements Trigger {
      * command line.
      *
      * @param args the command line parameters
+     * @throws Exception on failure
      */
     public static void main(String... args) throws Exception {
         Class.forName("org.h2.Driver");
@@ -68,6 +69,7 @@ public class TriggerPassData implements Trigger {
      * @param conn the connection
      * @param trigger the trigger name
      * @param data the data
+     * @throws SQLException on failure
      */
     public static void setTriggerData(Connection conn, String trigger,
             String data) throws SQLException {

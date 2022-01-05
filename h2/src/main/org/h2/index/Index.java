@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -508,17 +508,6 @@ public abstract class Index extends SchemaObject {
     }
 
     /**
-     * Enable or disable the 'sorted insert' optimizations (rows are inserted in
-     * ascending or descending order) if applicable for this index
-     * implementation.
-     *
-     * @param sortedInsertMode the new value
-     */
-    public void setSortedInsertMode(boolean sortedInsertMode) {
-        // ignore
-    }
-
-    /**
      * Create a duplicate key exception with a message that contains the index
      * name.
      *
@@ -539,7 +528,7 @@ public abstract class Index extends SchemaObject {
     }
 
     /**
-     * Get "PRIMARY KEY ON <table> [(column)]".
+     * Get "PRIMARY KEY ON &lt;table&gt; [(column)]".
      *
      * @param mainIndexColumn the column index
      * @return the message

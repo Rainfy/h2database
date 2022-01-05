@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -95,6 +95,7 @@ public class SortedProperties extends Properties {
      *
      * @param fileName the name of the properties file
      * @return the properties object
+     * @throws IOException on failure
      */
     public static synchronized SortedProperties loadProperties(String fileName)
             throws IOException {
@@ -111,6 +112,7 @@ public class SortedProperties extends Properties {
      * Store a properties file. The header and the date is not written.
      *
      * @param fileName the target file name
+     * @throws IOException on failure
      */
     public synchronized void store(String fileName) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();

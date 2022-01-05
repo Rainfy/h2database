@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -425,9 +425,6 @@ public class TestRights extends TestDb {
         conn.close();
 
         String url = "rights";
-        if (!config.mvStore) {
-            url += ";LOG=2";
-        }
 
         // try and fail (no rights yet)
         conn = getConnection(url, "SCHEMA_CREATOR", getPassword("xyz"));
@@ -577,9 +574,6 @@ public class TestRights extends TestDb {
         conn.close();
 
         String url = "rights";
-        if (!config.mvStore) {
-            url += ";LOG=2";
-        }
         conn = getConnection(url, "PASS_READER", getPassword("abc"));
         stat = conn.createStatement();
         executeSuccess("SELECT * FROM PASS_NAME");

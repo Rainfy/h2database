@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -142,7 +142,7 @@ public class CommandContainer extends Command {
             long mod = prepared.getModificationMetaId();
             prepared.setModificationMetaId(0);
             ArrayList<Parameter> newParams = prepared.getParameters();
-            for (int i = 0, size = newParams.size(); i < size; i++) {
+            for (int i = 0, size = Math.min(newParams.size(), oldParams.size()); i < size; i++) {
                 Parameter old = oldParams.get(i);
                 if (old.isValueSet()) {
                     Value v = old.getValue(session);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -101,7 +101,6 @@ public class TestTools extends TestDb {
         testDeleteFiles();
         testScriptRunscriptLob();
         testServerMain();
-        testRemove();
         testConvertTraceFile();
         testManagementDb();
         testChangeFileEncryption(false);
@@ -532,6 +531,13 @@ public class TestTools extends TestDb {
         } catch (SQLException e) {
             assertEquals("08001", e.getSQLState());
         }
+        try {
+            JdbcUtils.getConnection("javax.naming.InitialContext", "ldap://localhost/ds", "sa", "");
+            fail("Expected SQLException: 08001");
+        } catch (SQLException e) {
+            assertEquals("08001", e.getSQLState());
+            assertEquals("Only java scheme is supported for JNDI lookups", e.getMessage());
+        }
     }
 
     private void testWrongServer() throws Exception {
@@ -758,8 +764,7 @@ public class TestTools extends TestDb {
 
     private void testTraceFile(String url) throws SQLException {
         Connection conn;
-        Recover.main("-removePassword", "-dir", getBaseDir(), "-db",
-                "toolsConvertTraceFile");
+        Recover.main("-dir", getBaseDir(), "-db", "toolsConvertTraceFile");
         conn = getConnection(url, "sa", "");
         Statement stat = conn.createStatement();
         ResultSet rs;
@@ -782,32 +787,6 @@ public class TestTools extends TestDb {
         assertEquals("2007-12-31 23:59:59", rs.getString("i"));
         assertFalse(rs.next());
         conn.close();
-    }
-
-    private void testRemove() throws SQLException {
-        if (config.mvStore) {
-            return;
-        }
-        deleteDb("toolsRemove");
-        org.h2.Driver.load();
-        String url = "jdbc:h2:" + getBaseDir() + "/toolsRemove";
-        Connection conn = getConnection(url, "sa", "sa");
-        Statement stat = conn.createStatement();
-        stat.execute("create table test(id int primary key, name varchar)");
-        stat.execute("insert into test values(1, 'Hello')");
-        conn.close();
-        Recover.main("-dir", getBaseDir(), "-db", "toolsRemove",
-                "-removePassword");
-        conn = getConnection(url, "sa", "");
-        stat = conn.createStatement();
-        ResultSet rs;
-        rs = stat.executeQuery("select * from test");
-        rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals("Hello", rs.getString(2));
-        conn.close();
-        deleteDb("toolsRemove");
-        FileUtils.delete(getBaseDir() + "/toolsRemove.h2.sql");
     }
 
     private void testRecover() throws SQLException {
@@ -1148,7 +1127,7 @@ public class TestTools extends TestDb {
     /**
      * A simple Clob implementation.
      */
-    class SimpleClob implements Clob {
+    static class SimpleClob implements Clob {
 
         private final String data;
 
@@ -1238,7 +1217,7 @@ public class TestTools extends TestDb {
     /**
      * A simple Blob implementation.
      */
-    class SimpleBlob implements Blob {
+    static class SimpleBlob implements Blob {
 
         private final byte[] data;
 

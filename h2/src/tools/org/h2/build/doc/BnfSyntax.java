@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -42,13 +42,13 @@ public class BnfSyntax implements BnfVisitor {
                     extension = true;
                     buff.append("<span class=\"ruleCompat\">");
                 }
-                s = skipAfterExtensionStart(tokenizer, buff);
+                s = skipAfterExtensionStart(tokenizer);
             } else if (s.equals("@h2@")) {
                 if (!extension) {
                     extension = true;
                     buff.append("<span class=\"ruleH2\">");
                 }
-                s = skipAfterExtensionStart(tokenizer, buff);
+                s = skipAfterExtensionStart(tokenizer);
             }
             if (extension) {
                 if (s.length() == 1) {
@@ -98,7 +98,7 @@ public class BnfSyntax implements BnfVisitor {
         return s;
     }
 
-    private static String skipAfterExtensionStart(StringTokenizer tokenizer, StringBuilder buff) {
+    private static String skipAfterExtensionStart(StringTokenizer tokenizer) {
         String s;
         do {
             s = tokenizer.nextToken();

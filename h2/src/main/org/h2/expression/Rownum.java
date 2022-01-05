@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,6 +18,8 @@ import org.h2.value.ValueBigint;
 public final class Rownum extends Operation0 {
 
     private final Prepared prepared;
+
+    private boolean singleRow;
 
     public Rownum(Prepared prepared) {
         if (prepared == null) {
@@ -42,6 +44,11 @@ public final class Rownum extends Operation0 {
     }
 
     @Override
+    public Expression optimize(SessionLocal session) {
+        return singleRow ? ValueExpression.get(ValueBigint.get(1L)) : this;
+    }
+
+    @Override
     public boolean isEverything(ExpressionVisitor visitor) {
         switch (visitor.getType()) {
         case ExpressionVisitor.QUERY_COMPARABLE:
@@ -50,16 +57,13 @@ public final class Rownum extends Operation0 {
         case ExpressionVisitor.INDEPENDENT:
         case ExpressionVisitor.EVALUATABLE:
             return false;
-        case ExpressionVisitor.READONLY:
-        case ExpressionVisitor.NOT_FROM_RESOLVER:
-        case ExpressionVisitor.GET_DEPENDENCIES:
-        case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
-        case ExpressionVisitor.GET_COLUMNS1:
-        case ExpressionVisitor.GET_COLUMNS2:
-            // if everything else is the same, the rownum is the same
-            return true;
+        case ExpressionVisitor.DECREMENT_QUERY_LEVEL:
+            if (visitor.getQueryLevel() > 0) {
+                singleRow = true;
+            }
+            //$FALL-THROUGH$
         default:
-            throw DbException.getInternalError("type="+visitor.getType());
+            return true;
         }
     }
 

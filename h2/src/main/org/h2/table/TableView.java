@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -705,7 +705,7 @@ public class TableView extends Table {
         if (!view.isRecursiveQueryDetected()) {
             if (!isTemporary) {
                 db.addSchemaObject(session, view);
-                view.lock(session, true, true);
+                view.lock(session, Table.EXCLUSIVE_LOCK);
                 session.getDatabase().removeSchemaObject(session, view);
 
                 // during database startup - this method does not normally get called - and it
@@ -779,7 +779,6 @@ public class TableView extends Table {
         recursiveTableData.temporary = isTemporary;
         recursiveTableData.persistData = true;
         recursiveTableData.persistIndexes = !isTemporary;
-        recursiveTableData.create = true;
         recursiveTableData.session = targetSession;
 
         // this gets a meta table lock that is not released
@@ -808,7 +807,7 @@ public class TableView extends Table {
             Table recursiveTable) {
         if (recursiveTable != null) {
             if (!isTemporary) {
-                recursiveTable.lock(targetSession, true, true);
+                recursiveTable.lock(targetSession, Table.EXCLUSIVE_LOCK);
                 targetSession.getDatabase().removeSchemaObject(targetSession, recursiveTable);
 
             } else {

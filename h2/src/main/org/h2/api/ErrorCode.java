@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -1817,8 +1817,8 @@ public class ErrorCode {
      * Example:
      * <pre>
      * CREATE DOMAIN INTEGER AS VARCHAR;
-     * CREATE DOMAIN EMAIL AS VARCHAR CHECK LOCATE('@', VALUE) > 0;
-     * CREATE DOMAIN EMAIL AS VARCHAR CHECK LOCATE('@', VALUE) > 0;
+     * CREATE DOMAIN EMAIL AS VARCHAR CHECK LOCATE('@', VALUE) &gt; 0;
+     * CREATE DOMAIN EMAIL AS VARCHAR CHECK LOCATE('@', VALUE) &gt; 0;
      * </pre>
      */
     public static final int DOMAIN_ALREADY_EXISTS_1 = 90119;
@@ -2248,6 +2248,8 @@ public class ErrorCode {
 
     /**
      * INTERNAL
+     * @param errorCode to check
+     * @return true if provided code is common, false otherwise
      */
     public static boolean isCommon(int errorCode) {
         // this list is sorted alphabetically
@@ -2276,6 +2278,8 @@ public class ErrorCode {
 
     /**
      * INTERNAL
+     * @param errorCode to get state for
+     * @return error state
      */
     public static String getState(int errorCode) {
         // To convert SQLState to error code, replace

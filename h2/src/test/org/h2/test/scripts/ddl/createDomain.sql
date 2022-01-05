@@ -1,4 +1,4 @@
--- Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (https://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -247,4 +247,13 @@ DROP DOMAIN D3;
 > ok
 
 DROP DOMAIN D2;
+> ok
+
+CREATE DOMAIN D AS CHARACTER VARYING CHECK (VALUE LIKE '%1%');
+> ok
+
+ALTER DOMAIN D ADD CHECK (VALUE ILIKE '%2%');
+> ok
+
+DROP DOMAIN D;
 > ok

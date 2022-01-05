@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -137,10 +137,10 @@ public class DataType {
         add(Value.TINYINT, Types.TINYINT, createNumeric(ValueTinyint.PRECISION, 0), "TINYINT");
         add(Value.SMALLINT, Types.SMALLINT, createNumeric(ValueSmallint.PRECISION, 0), "SMALLINT", "INT2");
         add(Value.INTEGER, Types.INTEGER, createNumeric(ValueInteger.PRECISION, 0),
-                "INTEGER", "INT", "MEDIUMINT", "INT4", "SIGNED", "SERIAL"
+                "INTEGER", "INT", "MEDIUMINT", "INT4", "SIGNED"
         );
         add(Value.BIGINT, Types.BIGINT, createNumeric(ValueBigint.PRECISION, 0),
-                "BIGINT", "INT8", "LONG", "IDENTITY", "BIGSERIAL");
+                "BIGINT", "INT8", "LONG");
         dataType = new DataType();
         dataType.minPrecision = 1;
         dataType.defaultPrecision = dataType.maxPrecision = Constants.MAX_NUMERIC_PRECISION;
@@ -150,7 +150,7 @@ public class DataType {
         dataType.params = "PRECISION,SCALE";
         dataType.supportsPrecision = true;
         dataType.supportsScale = true;
-        add(Value.NUMERIC, Types.NUMERIC, dataType, "NUMERIC", "DECIMAL", "DEC", "NUMBER");
+        add(Value.NUMERIC, Types.NUMERIC, dataType, "NUMERIC", "DECIMAL", "DEC");
         add(Value.REAL, Types.REAL, createNumeric(ValueReal.PRECISION, 0), "REAL", "FLOAT4");
         add(Value.DOUBLE, Types.DOUBLE, createNumeric(ValueDouble.PRECISION, 0),
                 "DOUBLE PRECISION", "DOUBLE", "FLOAT8");
@@ -312,8 +312,8 @@ public class DataType {
         dataType.prefix = "'";
         dataType.suffix = "'";
         dataType.params = "TYPE,SRID";
-        dataType.maxPrecision = Constants.MAX_STRING_LENGTH;
-        dataType.defaultPrecision = Constants.MAX_STRING_LENGTH;
+        dataType.maxPrecision = Long.MAX_VALUE;
+        dataType.defaultPrecision = Long.MAX_VALUE;
         return dataType;
     }
 
@@ -386,6 +386,7 @@ public class DataType {
      * @param meta the meta data
      * @param columnIndex the column index (1, 2,...)
      * @return the value type
+     * @throws SQLException on failure
      */
     public static int getValueTypeFromResultSet(ResultSetMetaData meta,
             int columnIndex) throws SQLException {

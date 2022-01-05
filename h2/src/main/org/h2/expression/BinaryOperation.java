@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -38,7 +38,7 @@ public class BinaryOperation extends Operation2 {
         MULTIPLY,
 
         /**
-         * This operation represents a division as in 4 * 2.
+         * This operation represents a division as in 4 / 2.
          */
         DIVIDE
     }
@@ -143,7 +143,7 @@ public class BinaryOperation extends Operation2 {
             if (forcedType != null) {
                 throw getUnexpectedForcedTypeException();
             }
-            return optimizeInterval(session, l, r);
+            return optimizeInterval(l, r);
         } else if (DataType.isDateTimeType(l) || DataType.isDateTimeType(r)) {
             return optimizeDateTime(session, l, r);
         } else if (forcedType != null) {
@@ -244,7 +244,7 @@ public class BinaryOperation extends Operation2 {
         type = TypeInfo.getTypeInfo(Value.DECFLOAT, precision, 0, null);
     }
 
-    private Expression optimizeInterval(SessionLocal session, int l, int r) {
+    private Expression optimizeInterval(int l, int r) {
         boolean lInterval = false, lNumeric = false, lDateTime = false;
         if (DataType.isIntervalType(l)) {
             lInterval = true;

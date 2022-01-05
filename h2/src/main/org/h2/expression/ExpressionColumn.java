@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -300,7 +300,7 @@ public final class ExpressionColumn extends Expression {
 
     @Override
     public TypeInfo getType() {
-        return column == null ? TypeInfo.TYPE_UNKNOWN : column.getType();
+        return column != null ? column.getType() : rowId ? TypeInfo.TYPE_BIGINT : TypeInfo.TYPE_UNKNOWN;
     }
 
     @Override
@@ -376,10 +376,6 @@ public final class ExpressionColumn extends Expression {
         switch (visitor.getType()) {
         case ExpressionVisitor.OPTIMIZABLE_AGGREGATE:
             return false;
-        case ExpressionVisitor.READONLY:
-        case ExpressionVisitor.DETERMINISTIC:
-        case ExpressionVisitor.QUERY_COMPARABLE:
-            return true;
         case ExpressionVisitor.INDEPENDENT:
             return this.queryLevel < visitor.getQueryLevel();
         case ExpressionVisitor.EVALUATABLE:
@@ -414,8 +410,25 @@ public final class ExpressionColumn extends Expression {
             }
             visitor.addColumn2(column);
             return true;
+        case ExpressionVisitor.DECREMENT_QUERY_LEVEL: {
+            if (column == null) {
+                throw DbException.get(ErrorCode.COLUMN_NOT_FOUND_1, getTraceSQL());
+            }
+            if (visitor.getColumnResolvers().contains(columnResolver)) {
+                int decrement = visitor.getQueryLevel();
+                if (decrement > 0) {
+                    if (queryLevel > 0) {
+                        queryLevel--;
+                        return true;
+                    }
+                    throw DbException.getInternalError("queryLevel=0");
+                }
+                return queryLevel > 0;
+            }
+        }
+        //$FALL-THROUGH$
         default:
-            throw DbException.getInternalError("type=" + visitor.getType());
+            return true;
         }
     }
 

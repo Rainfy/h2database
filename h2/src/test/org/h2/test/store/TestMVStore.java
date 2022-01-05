@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -513,8 +513,7 @@ public class TestMVStore extends TestBase {
             }
             Throwable e = exRef.get();
             assertNotNull(e);
-            assertEquals(DataUtils.ERROR_WRITING_FAILED,
-                    ((MVStoreException) e).getErrorCode());
+            checkErrorCode(DataUtils.ERROR_WRITING_FAILED, e);
         } catch (MVStoreException e) {
             // sometimes it is detected right away
             assertEquals(DataUtils.ERROR_CLOSED, e.getErrorCode());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -195,7 +195,7 @@ public class IndexCursor implements Cursor {
             v = v.convertToGeometry(null).getEnvelopeUnion(vg);
         }
         if (columnId == SearchRow.ROWID_INDEX) {
-            row.setKey(v.getLong());
+            row.setKey(v == ValueNull.INSTANCE ? Long.MIN_VALUE : v.getLong());
         } else {
             row.setValue(columnId, v);
         }
@@ -209,7 +209,7 @@ public class IndexCursor implements Cursor {
             v = getMax(row.getValue(columnId), v, max);
         }
         if (columnId == SearchRow.ROWID_INDEX) {
-            row.setKey(v.getLong());
+            row.setKey(v == ValueNull.INSTANCE ? Long.MIN_VALUE : v.getLong());
         } else {
             row.setValue(columnId, v);
         }

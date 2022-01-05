@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -16,15 +16,14 @@ import org.h2.command.query.AllColumnsForPlan;
 import org.h2.engine.DbObject;
 import org.h2.engine.Right;
 import org.h2.engine.SessionLocal;
-import org.h2.engine.UndoLogRecord;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionVisitor;
 import org.h2.expression.Parameter;
 import org.h2.expression.ValueExpression;
 import org.h2.message.DbException;
+import org.h2.result.LocalResult;
 import org.h2.result.ResultTarget;
 import org.h2.result.Row;
-import org.h2.result.RowList;
 import org.h2.table.Column;
 import org.h2.table.DataChangeDeltaTable;
 import org.h2.table.DataChangeDeltaTable.ResultOption;
@@ -80,7 +79,7 @@ public final class MergeUsing extends DataChangeStatement {
         sourceTableFilter.reset();
         Table table = targetTableFilter.getTable();
         table.fire(session, evaluateTriggerMasks(), true);
-        table.lock(session, true, false);
+        table.lock(session, Table.WRITE_LOCK);
         setCurrentRowNumber(0);
         long count = 0;
         Row previousSource = null, missedSource = null;
@@ -103,7 +102,7 @@ public final class MergeUsing extends DataChangeStatement {
             boolean nullRow = targetTableFilter.isNullRow();
             if (!nullRow) {
                 Row targetRow = targetTableFilter.get();
-                if (table.isMVStore()) {
+                if (table.isRowLockable()) {
                     Row lockedRow = table.lockRow(session, targetRow);
                     if (lockedRow == null) {
                         if (previousSource != source) {
@@ -400,7 +399,6 @@ public final class MergeUsing extends DataChangeStatement {
             }
             if (!table.fireRow() || !table.fireBeforeRow(session, row, null)) {
                 table.removeRow(session, row);
-                session.log(table, UndoLogRecord.DELETE, row);
                 table.fireAfterRow(session, row, null, false);
             }
         }
@@ -434,7 +432,7 @@ public final class MergeUsing extends DataChangeStatement {
         void merge(SessionLocal session, ResultTarget deltaChangeCollector, ResultOption deltaChangeCollectionMode) {
             TableFilter targetTableFilter = MergeUsing.this.targetTableFilter;
             Table table = targetTableFilter.getTable();
-            try (RowList rows = new RowList(session, table)) {
+            try (LocalResult rows = LocalResult.forTable(session, table)) {
                 setClauseList.prepareUpdate(table, session, deltaChangeCollector, deltaChangeCollectionMode, rows,
                         targetTableFilter.get(), false);
                 Update.doUpdate(MergeUsing.this, session, table, rows);
@@ -511,7 +509,6 @@ public final class MergeUsing extends DataChangeStatement {
                 table.addRow(session, newRow);
                 DataChangeDeltaTable.collectInsertedFinalRow(session, table, deltaChangeCollector,
                         deltaChangeCollectionMode, newRow);
-                session.log(table, UndoLogRecord.INSERT, newRow);
                 table.fireAfterRow(session, null, newRow, false);
             } else {
                 DataChangeDeltaTable.collectInsertedFinalRow(session, table, deltaChangeCollector,

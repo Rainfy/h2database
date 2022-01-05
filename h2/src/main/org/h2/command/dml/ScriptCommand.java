@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -247,7 +247,7 @@ public class ScriptCommand extends ScriptBase {
                 if (table.isHidden()) {
                     continue;
                 }
-                table.lock(session, false, false);
+                table.lock(session, Table.READ_LOCK);
                 String sql = table.getCreateSQL();
                 if (sql == null) {
                     // null for metadata tables
@@ -290,7 +290,7 @@ public class ScriptCommand extends ScriptBase {
                 if (table.isHidden()) {
                     continue;
                 }
-                table.lock(session, false, false);
+                table.lock(session, Table.READ_LOCK);
                 String createTableSql = table.getCreateSQL();
                 if (createTableSql == null) {
                     // null for metadata tables
@@ -328,7 +328,6 @@ public class ScriptCommand extends ScriptBase {
             }
             if (tempLobTableCreated) {
                 add("DROP TABLE IF EXISTS SYSTEM_LOB_STREAM", true);
-                add("CALL SYSTEM_COMBINE_BLOB(-1)", true);
                 add("DROP ALIAS IF EXISTS SYSTEM_COMBINE_CLOB", true);
                 add("DROP ALIAS IF EXISTS SYSTEM_COMBINE_BLOB", true);
                 tempLobTableCreated = false;
@@ -639,6 +638,7 @@ public class ScriptCommand extends ScriptBase {
      * @param conn a connection
      * @param id the lob id
      * @return a stream for the combined data
+     * @throws SQLException on failure
      */
     public static InputStream combineBlob(Connection conn, int id)
             throws SQLException {
@@ -696,6 +696,7 @@ public class ScriptCommand extends ScriptBase {
      * @param conn a connection
      * @param id the lob id
      * @return a reader for the combined data
+     * @throws SQLException on failure
      */
     public static Reader combineClob(Connection conn, int id) throws SQLException {
         if (id < 0) {

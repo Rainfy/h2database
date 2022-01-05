@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -1007,9 +1007,13 @@ public final class JdbcDatabaseMetaData extends TraceObject
 
     /**
      * Gets the comma-separated list of all SQL keywords that are not supported
-     * as unquoted table/column/index name, in addition to the SQL:2003 keywords.
+     * as unquoted identifiers, in addition to the SQL:2003 reserved words.
+     * <p>
+     * List of keywords in H2 may depend on compatibility mode and other
+     * settings.
+     * </p>
      *
-     * @return a list of additional the keywords
+     * @return a list of additional keywords
      */
     @Override
     public String getSQLKeywords() throws SQLException {
@@ -1829,7 +1833,7 @@ public final class JdbcDatabaseMetaData extends TraceObject
      * ResultSet.TYPE_SCROLL_SENSITIVE is not supported.
      *
      * @param type the result set type
-     * @return true for all types except ResultSet.TYPE_FORWARD_ONLY
+     * @return true for all types except ResultSet.TYPE_SCROLL_SENSITIVE
      */
     @Override
     public boolean supportsResultSetType(int type) {
@@ -2613,7 +2617,7 @@ public final class JdbcDatabaseMetaData extends TraceObject
         }
         int id = getNextId(TraceObject.RESULT_SET);
         debugCodeAssign("ResultSet", TraceObject.RESULT_SET, id, "getClientInfoProperties()");
-        return new JdbcResultSet(conn, null, null, result, id, true, false);
+        return new JdbcResultSet(conn, null, null, result, id, true, false, false);
     }
 
     /**
@@ -2746,7 +2750,7 @@ public final class JdbcDatabaseMetaData extends TraceObject
     }
 
     private JdbcResultSet getResultSet(ResultInterface result) {
-        return new JdbcResultSet(conn, null, null, result, getNextId(TraceObject.RESULT_SET), false, false);
+        return new JdbcResultSet(conn, null, null, result, getNextId(TraceObject.RESULT_SET), true, false, false);
     }
 
 }

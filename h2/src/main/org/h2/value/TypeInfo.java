@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -1465,7 +1465,9 @@ public class TypeInfo extends ExtTypeInfo implements Typed {
     }
 
     /**
-     * Returns the declared name of this data type.
+     * Returns the declared name of this data type with precision, scale,
+     * length, cardinality etc. parameters removed, excluding parameters of ENUM
+     * data type, GEOMETRY data type, ARRAY elements, and ROW fields.
      *
      * @return the declared name
      */
@@ -1479,6 +1481,14 @@ public class TypeInfo extends ExtTypeInfo implements Typed {
                 return "FLOAT";
             }
             break;
+        case Value.ENUM:
+        case Value.GEOMETRY:
+        case Value.ROW:
+            return getSQL(DEFAULT_SQL_FLAGS);
+        case Value.ARRAY:
+            TypeInfo typeInfo = (TypeInfo) extTypeInfo;
+            // Use full type names with parameters for elements
+            return typeInfo.getSQL(new StringBuilder(), DEFAULT_SQL_FLAGS).append(" ARRAY").toString();
         }
         return Value.getTypeName(valueType);
     }

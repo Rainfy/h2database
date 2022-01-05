@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -373,7 +373,7 @@ public final class DateTimeFunction extends Function1_2 {
      * @param date
      *            the date value
      * @param field
-     *            the field type, see {@link Function} for constants
+     *            the field type
      * @return the value
      */
     private static int extractInteger(SessionLocal session, Value date, int field) {
@@ -973,7 +973,7 @@ public final class DateTimeFunction extends Function1_2 {
             int valueType = type.getValueType();
             // TODO set scale when possible
             if (!DataType.isDateTimeType(valueType)) {
-                throw DbException.getInvalidValueException("DATE_TRUNC datetime argument", type.getTraceSQL());
+                throw DbException.getInvalidExpressionTypeException("DATE_TRUNC datetime argument", left);
             } else if (session.getMode().getEnum() == ModeEnum.PostgreSQL && valueType == Value.DATE) {
                 type = TypeInfo.TYPE_TIMESTAMP_TZ;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -637,6 +637,15 @@ public class MVMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V
      */
     final void setRootPos(long rootPos, long version) {
         Page<K,V> root = readOrCreateRootPage(rootPos);
+        if (root.map != this) {
+            // this can only happen on concurrent opening of existing map,
+            // when second thread picks up some cached page already owned by
+            // the first map's instantiation (both maps share the same id)
+            assert id == root.map.id;
+            // since it is unknown which one will win the race,
+            // let each map instance to have it's own copy
+            root = root.copy(this, false);
+        }
         setInitialRoot(root, version);
         setWriteVersion(store.getCurrentVersion());
     }
@@ -1180,7 +1189,7 @@ public class MVMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V
     }
 
     private void copy(Page<K,V> source, Page<K,V> parent, int index) {
-        Page<K,V> target = source.copy(this);
+        Page<K,V> target = source.copy(this, true);
         if (parent == null) {
             setInitialRoot(target, INITIAL_VERSION);
         } else {
@@ -1257,11 +1266,15 @@ public class MVMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V
                             K[] keys = p.createKeyStorage(keyCount);
                             V[] values = p.createValueStorage(keyCount);
                             System.arraycopy(keysBuffer, available, keys, 0, keyCount);
-                            System.arraycopy(valuesBuffer, available, values, 0, keyCount);
+                            if (valuesBuffer != null) {
+                                System.arraycopy(valuesBuffer, available, values, 0, keyCount);
+                            }
                             page = Page.createLeaf(this, keys, values, 0);
                         } else {
                             System.arraycopy(keysBuffer, available, keysBuffer, 0, keyCount);
-                            System.arraycopy(valuesBuffer, available, valuesBuffer, 0, keyCount);
+                            if (valuesBuffer != null) {
+                                System.arraycopy(valuesBuffer, available, valuesBuffer, 0, keyCount);
+                            }
                             remainingBuffer = keyCount;
                         }
                     }
@@ -1269,7 +1282,7 @@ public class MVMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V
                     tip = tip.parent;
                     page = Page.createLeaf(this,
                             Arrays.copyOf(keysBuffer, keyCount),
-                            Arrays.copyOf(valuesBuffer, keyCount),
+                            valuesBuffer == null ? null : Arrays.copyOf(valuesBuffer, keyCount),
                             0);
                 }
 
@@ -1373,7 +1386,9 @@ public class MVMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V
                     assert appendCounter < keysPerPage;
                 }
                 keysBuffer[appendCounter] = key;
-                valuesBuffer[appendCounter] = value;
+                if (valuesBuffer != null) {
+                    valuesBuffer[appendCounter] = value;
+                }
                 ++appendCounter;
             } finally {
                 unlockRoot(appendCounter);

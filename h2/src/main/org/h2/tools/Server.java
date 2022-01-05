@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -23,7 +23,6 @@ import org.h2.util.Utils;
 
 /**
  * Starts the H2 Console (web-) server, TCP, and PG server.
- * @h2.resource
  */
 public class Server extends Tool implements Runnable, ShutdownHandler {
 
@@ -42,6 +41,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      *
      * @param service the service
      * @param args the command line arguments
+     * @throws SQLException on failure
      */
     public Server(Service service, String... args) throws SQLException {
         verifyArgs(args);
@@ -55,9 +55,10 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
 
     /**
      * When running without options, -tcp, -web, -browser and -pg are started.
-     * <br />
-     * Options are case sensitive. Supported options are:
+     *
+     * Options are case sensitive.
      * <table>
+     * <caption>Supported options</caption>
      * <tr><td>[-help] or [-?]</td>
      * <td>Print the list of options</td></tr>
      * <tr><td>[-web]</td>
@@ -112,11 +113,11 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * <td>Allows to map a database name to another (all servers)</td></tr>
      * </table>
      * The options -xAllowOthers are potentially risky.
-     * <br />
+     *
      * For details, see Advanced Topics / Protection against Remote Access.
-     * @h2.resource
      *
      * @param args the command line arguments
+     * @throws SQLException on failure
      */
     public static void main(String... args) throws SQLException {
         new Server().runTool(args);
@@ -375,6 +376,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * @param force the shutdown (don't wait)
      * @param all whether all TCP servers that are running in the JVM should be
      *            stopped
+     * @throws SQLException on failure
      */
     public static void shutdownTcpServer(String url, String password,
             boolean force, boolean all) throws SQLException {
@@ -424,6 +426,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      *
      * @param args the argument list
      * @return the server
+     * @throws SQLException on failure
      */
     public static Server createWebServer(String... args) throws SQLException {
         return createWebServer(args, null, false);
@@ -468,6 +471,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      *
      * @param args the argument list
      * @return the server
+     * @throws SQLException on failure
      */
     public static Server createTcpServer(String... args) throws SQLException {
         TcpServer service = new TcpServer();
@@ -495,6 +499,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      *
      * @param args the argument list
      * @return the server
+     * @throws SQLException on failure
      */
     public static Server createPgServer(String... args) throws SQLException {
         return new Server(new PgServer(), args);
@@ -615,6 +620,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
 
     /**
      * INTERNAL
+     * @param shutdownHandler to set
      */
     public void setShutdownHandler(ShutdownHandler shutdownHandler) {
         this.shutdownHandler = shutdownHandler;
@@ -645,6 +651,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * Open a new browser tab or window with the given URL.
      *
      * @param url the URL to open
+     * @throws Exception on failure
      */
     public static void openBrowser(String url) throws Exception {
         try {
@@ -736,6 +743,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * user has disconnected.
      *
      * @param conn the database connection (the database must be open)
+     * @throws SQLException on failure
      */
     public static void startWebServer(Connection conn) throws SQLException {
         startWebServer(conn, false);
@@ -750,6 +758,7 @@ public class Server extends Tool implements Runnable, ShutdownHandler {
      * @param conn the database connection (the database must be open)
      * @param ignoreProperties if {@code true} properties from
      *         {@code .h2.server.properties} will be ignored
+     * @throws SQLException on failure
      */
     public static void startWebServer(Connection conn, boolean ignoreProperties) throws SQLException {
         WebServer webServer = new WebServer();

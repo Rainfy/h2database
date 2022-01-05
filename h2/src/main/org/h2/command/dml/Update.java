@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -17,13 +17,13 @@ import org.h2.engine.SessionLocal;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionVisitor;
 import org.h2.message.DbException;
+import org.h2.result.LocalResult;
 import org.h2.result.ResultTarget;
 import org.h2.result.Row;
-import org.h2.result.RowList;
+import org.h2.table.DataChangeDeltaTable.ResultOption;
 import org.h2.table.PlanItem;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
-import org.h2.table.DataChangeDeltaTable.ResultOption;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -56,10 +56,10 @@ public final class Update extends FilteredDataChangeStatement {
         targetTableFilter.startQuery(session);
         targetTableFilter.reset();
         Table table = targetTableFilter.getTable();
-        try (RowList rows = new RowList(session, table)) {
+        try (LocalResult rows = LocalResult.forTable(session, table)) {
             session.getUser().checkTableRight(table, Right.UPDATE);
             table.fire(session, Trigger.UPDATE, true);
-            table.lock(session, true, false);
+            table.lock(session, Table.WRITE_LOCK);
             // get the old rows, compute the new rows
             setCurrentRowNumber(0);
             long count = 0;
@@ -72,7 +72,7 @@ public final class Update extends FilteredDataChangeStatement {
             }
             while (nextRow(limitRows, count)) {
                 Row oldRow = targetTableFilter.get();
-                if (table.isMVStore()) {
+                if (table.isRowLockable()) {
                     Row lockedRow = table.lockRow(session, oldRow);
                     if (lockedRow == null) {
                         continue;
@@ -96,7 +96,8 @@ public final class Update extends FilteredDataChangeStatement {
         }
     }
 
-    static void doUpdate(Prepared prepared, SessionLocal session, Table table, RowList rows) {
+    static void doUpdate(Prepared prepared, SessionLocal session, Table table, LocalResult rows) {
+        rows.done();
         // TODO self referencing referential integrity constraints
         // don't work if update is multi-row and 'inversed' the condition!
         // probably need multi-row triggers with 'deleted' and 'inserted'
@@ -107,9 +108,10 @@ public final class Update extends FilteredDataChangeStatement {
         // the cached row is already updated - we need the old values
         table.updateRows(prepared, session, rows);
         if (table.fireRow()) {
-            for (rows.reset(); rows.hasNext();) {
-                Row o = rows.next();
-                Row n = rows.next();
+            for (rows.reset(); rows.next();) {
+                Row o = rows.currentRowForTable();
+                rows.next();
+                Row n = rows.currentRowForTable();
                 table.fireAfterRow(session, o, n, false);
             }
         }

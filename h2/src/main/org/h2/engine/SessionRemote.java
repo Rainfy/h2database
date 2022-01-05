@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -64,7 +64,7 @@ public final class SessionRemote extends Session implements DataHandler {
     public static final int COMMAND_COMMIT = 8;
     public static final int CHANGE_ID = 9;
     public static final int COMMAND_GET_META_DATA = 10;
-    public static final int SESSION_PREPARE_READ_PARAMS = 11;
+    // 11 was used for SESSION_PREPARE_READ_PARAMS
     public static final int SESSION_SET_ID = 12;
     public static final int SESSION_CANCEL_STATEMENT = 13;
     public static final int SESSION_CHECK_KEY = 14;
@@ -161,11 +161,7 @@ public final class SessionRemote extends Session implements DataHandler {
                 trans.writeString(timeZone.getId());
             }
             done(trans);
-            if (clientVersion >= Constants.TCP_PROTOCOL_VERSION_15) {
-                autoCommit = trans.readBoolean();
-            } else {
-                autoCommit = true;
-            }
+            autoCommit = trans.readBoolean();
             return trans;
         } catch (DbException e) {
             trans.close();
@@ -234,7 +230,11 @@ public final class SessionRemote extends Session implements DataHandler {
         }
     }
 
-    @Override
+    /**
+     * Returns the TCP protocol version of remote connection.
+     *
+     * @return the TCP protocol version
+     */
     public int getClientVersion() {
         return clientVersion;
     }
@@ -684,11 +684,6 @@ public final class SessionRemote extends Session implements DataHandler {
     }
 
     @Override
-    public String getLobCompressionAlgorithm(int type) {
-        return null;
-    }
-
-    @Override
     public int getMaxLengthInplaceLob() {
         return SysProperties.LOB_CLIENT_MAX_SIZE_MEMORY;
     }
@@ -823,11 +818,6 @@ public final class SessionRemote extends Session implements DataHandler {
             command.executeUpdate(null);
             currentSchemaName = schema;
         }
-    }
-
-    @Override
-    public boolean isSupportsGeneratedKeys() {
-        return clientVersion >= Constants.TCP_PROTOCOL_VERSION_17;
     }
 
     @Override

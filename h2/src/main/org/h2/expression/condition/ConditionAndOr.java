@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -188,15 +188,15 @@ public class ConditionAndOr extends Condition {
         }
         Expression e = optimizeIfConstant(session, andOrType, left, right);
         if (e == null) {
-            return optimizeN(session, this);
+            return optimizeN(this);
         }
         if (e instanceof ConditionAndOr) {
-            return optimizeN(session, (ConditionAndOr) e);
+            return optimizeN((ConditionAndOr) e);
         }
         return e;
     }
 
-    private static Expression optimizeN(SessionLocal session, ConditionAndOr condition) {
+    private static Expression optimizeN(ConditionAndOr condition) {
         if (condition.right instanceof ConditionAndOr) {
             ConditionAndOr rightCondition = (ConditionAndOr) condition.right;
             if (rightCondition.andOrType == condition.andOrType) {

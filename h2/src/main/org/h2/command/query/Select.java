@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -147,7 +147,7 @@ public class Select extends Query {
     boolean isGroupQuery;
     private boolean isGroupSortedQuery;
     private boolean isWindowQuery;
-    private boolean isForUpdate, isForUpdateMvcc;
+    private boolean isForUpdate;
     private double cost;
     private boolean isQuickAggregateQuery, isDistinctQuery;
     private boolean sortUsingIndex;
@@ -428,7 +428,7 @@ public class Select extends Query {
                     Row row = tableFilter.get();
                     Table table = tableFilter.getTable();
                     // Views, function tables, links, etc. do not support locks
-                    if (table.isMVStore()) {
+                    if (table.isRowLockable()) {
                         Row lockedRow = table.lockRow(session, row);
                         if (lockedRow == null) {
                             return false;
@@ -516,7 +516,7 @@ public class Select extends Query {
         setCurrentRowNumber(0);
         while (topTableFilter.next()) {
             setCurrentRowNumber(rowNumber + 1);
-            if (isForUpdateMvcc ? isConditionMetForUpdate() : isConditionMet()) {
+            if (isForUpdate ? isConditionMetForUpdate() : isConditionMet()) {
                 rowNumber++;
                 groupData.nextSource();
                 updateAgg(columnCount, stage);
@@ -716,7 +716,7 @@ public class Select extends Query {
                 limitRows = Long.MAX_VALUE;
             }
         }
-        LazyResultQueryFlat lazyResult = new LazyResultQueryFlat(expressionArray, columnCount, isForUpdateMvcc);
+        LazyResultQueryFlat lazyResult = new LazyResultQueryFlat(expressionArray, columnCount, isForUpdate);
         skipOffset(lazyResult, offset, quickOffset);
         if (result == null) {
             return lazyResult;
@@ -806,8 +806,7 @@ public class Select extends Query {
         }
         topTableFilter.startQuery(session);
         topTableFilter.reset();
-        boolean exclusive = isForUpdate && !isForUpdateMvcc;
-        topTableFilter.lock(session, exclusive, exclusive);
+        topTableFilter.lock(session);
         ResultTarget to = result != null ? result : target;
         lazy &= to == null;
         LazyResult lazyResult = null;
@@ -1257,7 +1256,7 @@ public class Select extends Query {
                     }
                 }
             }
-            if (sortUsingIndex && isForUpdateMvcc && !topTableFilter.getIndex().isRowIdIndex()) {
+            if (sortUsingIndex && isForUpdate && !topTableFilter.getIndex().isRowIdIndex()) {
                 sortUsingIndex = false;
             }
         }
@@ -1539,9 +1538,6 @@ public class Select extends Query {
             throw DbException.get(ErrorCode.FOR_UPDATE_IS_NOT_ALLOWED_IN_DISTINCT_OR_GROUPED_SELECT);
         }
         this.isForUpdate = b;
-        if (session.getDatabase().isMVStore()) {
-            isForUpdateMvcc = b;
-        }
     }
 
     @Override
@@ -1888,9 +1884,10 @@ public class Select extends Query {
                 setCurrentRowNumber(rowNumber + 1);
                 if (isConditionMet()) {
                     rowNumber++;
-                    Value[] keyValues = new Value[groupIndex.length];
+                    int groupSize = groupIndex.length;
+                    Value[] keyValues = new Value[groupSize];
                     // update group
-                    for (int i = 0; i < groupIndex.length; i++) {
+                    for (int i = 0; i < groupSize; i++) {
                         int idx = groupIndex[i];
                         Expression expr = expressions.get(idx);
                         keyValues[i] = expr.getValue(getSession());
@@ -1900,10 +1897,16 @@ public class Select extends Query {
                     if (previousKeyValues == null) {
                         previousKeyValues = keyValues;
                         groupData.nextLazyGroup();
-                    } else if (!Arrays.equals(previousKeyValues, keyValues)) {
-                        row = createGroupSortedRow(previousKeyValues, columnCount);
-                        previousKeyValues = keyValues;
-                        groupData.nextLazyGroup();
+                    } else {
+                        SessionLocal session = getSession();
+                        for (int i = 0; i < groupSize; i++) {
+                            if (session.compare(previousKeyValues[i], keyValues[i]) != 0) {
+                                row = createGroupSortedRow(previousKeyValues, columnCount);
+                                previousKeyValues = keyValues;
+                                groupData.nextLazyGroup();
+                                break;
+                            }
+                        }
                     }
                     groupData.nextLazyRow();
                     updateAgg(columnCount, DataAnalysisOperation.STAGE_GROUP);

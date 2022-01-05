@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -68,6 +68,7 @@ public class ParameterRemote implements ParameterInterface {
      * Read the parameter meta data from the transfer object.
      *
      * @param transfer the transfer object
+     * @throws IOException on failure
      */
     public void readMetaData(Transfer transfer) throws IOException {
         type = transfer.readTypeInfo();
@@ -79,6 +80,7 @@ public class ParameterRemote implements ParameterInterface {
      *
      * @param transfer the transfer object
      * @param p the parameter
+     * @throws IOException on failure
      */
     public static void writeMetaData(Transfer transfer, ParameterInterface p) throws IOException {
         transfer.writeTypeInfo(p.getType()).writeInt(p.getNullable());

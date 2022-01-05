@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -30,7 +30,6 @@ import org.h2.util.Tool;
 
 /**
  * Runs a SQL script against a database.
- * @h2.resource
  */
 public class RunScript extends Tool {
 
@@ -38,8 +37,9 @@ public class RunScript extends Tool {
     private boolean checkResults;
 
     /**
-     * Options are case sensitive. Supported options are:
+     * Options are case sensitive.
      * <table>
+     * <caption>Supported options</caption>
      * <tr><td>[-help] or [-?]</td>
      * <td>Print the list of options</td></tr>
      * <tr><td>[-url "&lt;url&gt;"]</td>
@@ -61,9 +61,9 @@ public class RunScript extends Tool {
      * <tr><td>[-options ...]</td>
      * <td>RUNSCRIPT options (embedded H2; -*Results not supported)</td></tr>
      * </table>
-     * @h2.resource
      *
      * @param args the command line arguments
+     * @throws SQLException on failure
      */
     public static void main(String... args) throws SQLException {
         new RunScript().runTool(args);
@@ -153,6 +153,7 @@ public class RunScript extends Tool {
      * @param conn the connection to a database
      * @param reader the reader
      * @return the last result set
+     * @throws SQLException on failure
      */
     public static ResultSet execute(Connection conn, Reader reader)
             throws SQLException {
@@ -289,6 +290,7 @@ public class RunScript extends Tool {
      * @param charset the character set or null for UTF-8
      * @param continueOnError if execution should be continued if an error
      *            occurs
+     * @throws SQLException on failure
      */
     public static void execute(String url, String user, String password,
             String fileName, Charset charset, boolean continueOnError)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -249,7 +249,7 @@ public final class Transaction {
                 throw DataUtils.newMVStoreException(
                         DataUtils.ERROR_TRANSACTION_ILLEGAL_STATE,
                         "Transaction was illegally transitioned from {0} to {1}",
-                        STATUS_NAMES[currentStatus], STATUS_NAMES[status]);
+                        getStatusName(currentStatus), getStatusName(status));
             }
             long newState = composeState(status, logId, hasRollback(currentState));
             if (statusAndLogId.compareAndSet(currentState, newState)) {
@@ -453,7 +453,7 @@ public final class Transaction {
     public <K, V> TransactionMap<K, V> openMap(String name,
                                                 DataType<K> keyType,
                                                 DataType<V> valueType) {
-        MVMap<K, VersionedValue<V>> map = store.openMap(name, keyType, valueType);
+        MVMap<K, VersionedValue<V>> map = store.openVersionedMap(name, keyType, valueType);
         return openMapX(map);
     }
 
@@ -533,9 +533,7 @@ public final class Transaction {
         try {
             store.rollbackTo(this, logId, savepointId);
         } finally {
-            if (notificationRequested) {
-                notifyAllWaitingTransactions();
-            }
+            notifyAllWaitingTransactions();
             long expectedState = composeState(STATUS_ROLLING_BACK, logId, hasRollback(lastState));
             long newState = composeState(STATUS_OPEN, savepointId, true);
             do {
@@ -625,7 +623,7 @@ public final class Transaction {
         if (status != STATUS_OPEN) {
             throw DataUtils.newMVStoreException(
                     DataUtils.ERROR_TRANSACTION_ILLEGAL_STATE,
-                    "Transaction {0} has status {1}, not OPEN", transactionId, STATUS_NAMES[status]);
+                    "Transaction {0} has status {1}, not OPEN", transactionId, getStatusName(status));
         }
     }
 
@@ -646,13 +644,17 @@ public final class Transaction {
         transactionMaps.clear();
         long lastState = setStatus(STATUS_CLOSED);
         store.store.deregisterVersionUsage(txCounter);
-        if((hasChanges(lastState) || hasRollback(lastState)) && notificationRequested) {
+        if((hasChanges(lastState) || hasRollback(lastState))) {
             notifyAllWaitingTransactions();
         }
     }
 
-    private synchronized void notifyAllWaitingTransactions() {
-        notifyAll();
+    private void notifyAllWaitingTransactions() {
+        if (notificationRequested) {
+            synchronized (this) {
+                notifyAll();
+            }
+        }
     }
 
     /**
@@ -669,52 +671,72 @@ public final class Transaction {
         blockingMapName = mapName;
         blockingKey = key;
         if (isDeadlocked(toWaitFor)) {
-            StringBuilder details = new StringBuilder(
-                    String.format("Transaction %d has been chosen as a deadlock victim. Details:%n", transactionId));
-            for (Transaction tx = toWaitFor, nextTx; (nextTx = tx.blockingTransaction) != null; tx = nextTx) {
-                details.append(String.format(
-                        "Transaction %d attempts to update map <%s> entry with key <%s> modified by transaction %s%n",
-                        tx.transactionId, tx.blockingMapName, tx.blockingKey, tx.blockingTransaction));
-                if (nextTx == this) {
-                    details.append(String.format(
-                            "Transaction %d attempts to update map <%s> entry with key <%s>"
-                                    + " modified by transaction %s%n",
-                            transactionId, blockingMapName, blockingKey, toWaitFor));
-                    if (isDeadlocked(toWaitFor)) {
-                        throw DataUtils.newMVStoreException(DataUtils.ERROR_TRANSACTIONS_DEADLOCK, "{0}",
-                                details.toString());
-                    }
-                }
-            }
+            tryThrowDeadLockException(false);
         }
-
-        try {
-            return toWaitFor.waitForThisToEnd(timeoutMillis);
-        } finally {
-            blockingMapName = null;
-            blockingKey = null;
-            blockingTransaction = null;
-        }
+        boolean result = toWaitFor.waitForThisToEnd(timeoutMillis, this);
+        blockingMapName = null;
+        blockingKey = null;
+        blockingTransaction = null;
+        return result;
     }
 
     private boolean isDeadlocked(Transaction toWaitFor) {
+        // use transaction sequence No as a tie-breaker
+        // the youngest transaction should be selected as a victim
+        Transaction youngest = toWaitFor;
+        int backstop = store.getMaxTransactionId();
         for(Transaction tx = toWaitFor, nextTx;
-            (nextTx = tx.blockingTransaction) != null && tx.getStatus() == Transaction.STATUS_OPEN;
-            tx = nextTx) {
+            (nextTx = tx.blockingTransaction) != null && tx.getStatus() == Transaction.STATUS_OPEN && backstop > 0;
+            tx = nextTx, --backstop) {
+
+            if (nextTx.sequenceNum > youngest.sequenceNum) {
+                youngest = nextTx;
+            }
+
             if (nextTx == this) {
-                return true;
+                if (youngest == this) {
+                    return true;
+                }
+                Transaction btx = youngest.blockingTransaction;
+                if (btx != null) {
+                    youngest.setStatus(STATUS_ROLLING_BACK);
+                    btx.notifyAllWaitingTransactions();
+                    return false;
+                }
             }
         }
         return false;
     }
 
-    private synchronized boolean waitForThisToEnd(int millis) {
+    private void tryThrowDeadLockException(boolean throwIt) {
+        BitSet visited = new BitSet();
+        StringBuilder details = new StringBuilder(
+                String.format("Transaction %d has been chosen as a deadlock victim. Details:%n", transactionId));
+        for (Transaction tx = this, nextTx;
+                !visited.get(tx.transactionId) &&  (nextTx = tx.blockingTransaction) != null; tx = nextTx) {
+            visited.set(tx.transactionId);
+            details.append(String.format(
+                    "Transaction %d attempts to update map <%s> entry with key <%s> modified by transaction %s%n",
+                    tx.transactionId, tx.blockingMapName, tx.blockingKey, tx.blockingTransaction));
+            if (nextTx == this) {
+                throwIt = true;
+            }
+        }
+        if (throwIt) {
+            throw DataUtils.newMVStoreException(DataUtils.ERROR_TRANSACTIONS_DEADLOCK, "{0}", details.toString());
+        }
+    }
+
+    private synchronized boolean waitForThisToEnd(int millis, Transaction waiter) {
         long until = System.currentTimeMillis() + millis;
         notificationRequested = true;
         long state;
         int status;
         while((status = getStatus(state = statusAndLogId.get())) != STATUS_CLOSED
                 && status != STATUS_ROLLED_BACK && !hasRollback(state)) {
+            if (waiter.getStatus() != STATUS_OPEN) {
+                waiter.tryThrowDeadLockException(true);
+            }
             long dur = until - System.currentTimeMillis();
             if(dur <= 0) {
                 return false;
@@ -749,7 +771,7 @@ public final class Transaction {
     }
 
     private static String stateToString(long state) {
-        return STATUS_NAMES[getStatus(state)] + (hasRollback(state) ? "<" : "") + " " + getLogId(state);
+        return getStatusName(getStatus(state)) + (hasRollback(state) ? "<" : "") + " " + getLogId(state);
     }
 
 
@@ -777,5 +799,9 @@ public final class Transaction {
             status |= 1 << STATUS_BITS;
         }
         return ((long)status << LOG_ID_BITS1) | logId;
+    }
+
+    private static String getStatusName(int status) {
+        return status >= 0 && status < STATUS_NAMES.length ? STATUS_NAMES[status] : "UNKNOWN_STATUS_" + status;
     }
 }

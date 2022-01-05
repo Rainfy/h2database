@@ -1,4 +1,4 @@
--- Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (https://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -726,8 +726,7 @@ EXPLAIN SELECT * FROM TEST ORDER BY V;
 >> SELECT "PUBLIC"."TEST"."ID", "PUBLIC"."TEST"."V" FROM "PUBLIC"."TEST" /* PUBLIC.CONSTRAINT_INDEX_2 */ ORDER BY 2 /* index sorted */
 
 EXPLAIN SELECT * FROM TEST ORDER BY V FOR UPDATE;
-#+mvStore#>> SELECT "PUBLIC"."TEST"."ID", "PUBLIC"."TEST"."V" FROM "PUBLIC"."TEST" /* PUBLIC.CONSTRAINT_INDEX_2 */ ORDER BY 2 FOR UPDATE
-#-mvStore#>> SELECT "PUBLIC"."TEST"."ID", "PUBLIC"."TEST"."V" FROM "PUBLIC"."TEST" /* PUBLIC.CONSTRAINT_INDEX_2 */ ORDER BY 2 FOR UPDATE /* index sorted */
+>> SELECT "PUBLIC"."TEST"."ID", "PUBLIC"."TEST"."V" FROM "PUBLIC"."TEST" /* PUBLIC.CONSTRAINT_INDEX_2 */ ORDER BY 2 FOR UPDATE
 
 DROP TABLE TEST;
 > ok
@@ -1179,3 +1178,9 @@ SELECT X FROM SYSTEM_RANGE(1, 2) ORDER BY X DESC FETCH FIRST 0xFFFFFFFF ROWS ONL
 > 2
 > 1
 > rows (ordered): 2
+
+SELECT ((SELECT 1 X) EXCEPT (SELECT 1 Y)) T;
+> T
+> ----
+> null
+> rows: 1

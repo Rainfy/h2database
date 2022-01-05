@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,9 +15,9 @@ import org.h2.expression.ExpressionVisitor;
 import org.h2.expression.Parameter;
 import org.h2.expression.ValueExpression;
 import org.h2.message.DbException;
+import org.h2.result.LocalResult;
 import org.h2.result.ResultTarget;
 import org.h2.result.Row;
-import org.h2.result.RowList;
 import org.h2.table.Column;
 import org.h2.table.ColumnResolver;
 import org.h2.table.DataChangeDeltaTable.ResultOption;
@@ -112,7 +112,7 @@ public final class SetClauseList implements HasSQL {
     }
 
     boolean prepareUpdate(Table table, SessionLocal session, ResultTarget deltaChangeCollector,
-            ResultOption deltaChangeCollectionMode, RowList rows, Row oldRow,
+            ResultOption deltaChangeCollectionMode, LocalResult rows, Row oldRow,
             boolean updateToCurrentValuesReturnsZero) {
         Column[] columns = table.getColumns();
         int columnCount = columns.length;
@@ -137,7 +137,7 @@ public final class SetClauseList implements HasSQL {
             newRow.setValue(i, newValue);
         }
         newRow.setKey(oldRow.getKey());
-        table.convertUpdateRow(session, newRow);
+        table.convertUpdateRow(session, newRow, false);
         boolean result = true;
         if (onUpdate) {
             if (!oldRow.hasSameValues(newRow)) {
@@ -150,7 +150,7 @@ public final class SetClauseList implements HasSQL {
                 }
                 // Convert on update expressions and reevaluate
                 // generated columns
-                table.convertUpdateRow(session, newRow);
+                table.convertUpdateRow(session, newRow, false);
             } else if (updateToCurrentValuesReturnsZero) {
                 result = false;
             }
@@ -163,8 +163,8 @@ public final class SetClauseList implements HasSQL {
             deltaChangeCollector.addRow(newRow.getValueList().clone());
         }
         if (!table.fireRow() || !table.fireBeforeRow(session, oldRow, newRow)) {
-            rows.add(oldRow);
-            rows.add(newRow);
+            rows.addRowForTable(oldRow);
+            rows.addRowForTable(newRow);
         }
         if (deltaChangeCollectionMode == ResultOption.FINAL) {
             deltaChangeCollector.addRow(newRow.getValueList());

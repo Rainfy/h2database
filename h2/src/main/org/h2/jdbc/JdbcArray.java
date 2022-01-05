@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -31,6 +31,9 @@ public final class JdbcArray extends TraceObject implements Array {
 
     /**
      * INTERNAL
+     * @param conn it belongs to
+     * @param value of
+     * @param id of the trace object
      */
     public JdbcArray(JdbcConnection conn, Value value, int id) {
         setTrace(conn.getSession().getTrace(), TraceObject.ARRAY, id);
@@ -264,7 +267,7 @@ public final class JdbcArray extends TraceObject implements Array {
         for (int i = (int) index; i < index + count; i++) {
             rs.addRow(ValueBigint.get(i), values[i - 1]);
         }
-        return new JdbcResultSet(conn, null, null, rs, id, true, false);
+        return new JdbcResultSet(conn, null, null, rs, id, true, false, false);
     }
 
     private void checkClosed() {

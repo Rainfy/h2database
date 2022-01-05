@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,7 +15,6 @@ import org.h2.command.query.Query;
 import org.h2.engine.DbObject;
 import org.h2.engine.Right;
 import org.h2.engine.SessionLocal;
-import org.h2.engine.UndoLogRecord;
 import org.h2.expression.Expression;
 import org.h2.expression.Parameter;
 import org.h2.expression.ValueExpression;
@@ -114,7 +113,7 @@ public final class Merge extends CommandWithValues {
             query.setNeverLazy(true);
             ResultInterface rows = query.query(0);
             table.fire(session, Trigger.UPDATE | Trigger.INSERT, true);
-            table.lock(session, true, false);
+            table.lock(session, Table.WRITE_LOCK);
             while (rows.next()) {
                 Value[] r = rows.currentRow();
                 Row newRow = table.getTemplateRow();
@@ -183,11 +182,10 @@ public final class Merge extends CommandWithValues {
                     deltaChangeCollector.addRow(row.getValueList().clone());
                 }
                 if (!table.fireBeforeRow(session, null, row)) {
-                    table.lock(session, true, false);
+                    table.lock(session, Table.WRITE_LOCK);
                     table.addRow(session, row);
                     DataChangeDeltaTable.collectInsertedFinalRow(session, table, deltaChangeCollector,
                             deltaChangeCollectionMode, row);
-                    session.log(table, UndoLogRecord.INSERT, row);
                     table.fireAfterRow(session, null, row, false);
                 } else {
                     DataChangeDeltaTable.collectInsertedFinalRow(session, table, deltaChangeCollector,

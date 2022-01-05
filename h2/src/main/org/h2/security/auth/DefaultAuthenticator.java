@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: Alessandro Ventura
  */
@@ -246,6 +246,10 @@ public class DefaultAuthenticator implements Authenticator {
      * Configure the authenticator from a configuration file
      *
      * @param configUrl URL of configuration file
+     * @throws AuthenticationException on failure
+     * @throws SAXException on failure
+     * @throws IOException on failure
+     * @throws ParserConfigurationException on failure
      */
     public void configureFromUrl(URL configUrl) throws AuthenticationException,
             SAXException, IOException, ParserConfigurationException {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -40,6 +40,7 @@ public class NetUtils {
      * @param port the port
      * @param ssl if SSL should be used
      * @return the socket
+     * @throws IOException on failure
      */
     public static Socket createLoopbackSocket(int port, boolean ssl)
             throws IOException {
@@ -64,6 +65,7 @@ public class NetUtils {
      *            address)
      * @param ssl if SSL should be used
      * @return the socket
+     * @throws IOException on failure
      */
     public static Socket createSocket(String server, int defaultPort, boolean ssl) throws IOException {
         return createSocket(server, defaultPort, ssl, 0);
@@ -78,6 +80,7 @@ public class NetUtils {
      * @param ssl if SSL should be used
      * @param networkTimeout socket so timeout
      * @return the socket
+     * @throws IOException on failure
      */
     public static Socket createSocket(String server, int defaultPort,
             boolean ssl, int networkTimeout) throws IOException {
@@ -103,6 +106,7 @@ public class NetUtils {
      * @param port the port
      * @param ssl if SSL should be used
      * @return the socket
+     * @throws IOException on failure
      */
     public static Socket createSocket(InetAddress address, int port, boolean ssl)
         throws IOException {
@@ -116,6 +120,7 @@ public class NetUtils {
      * @param ssl if SSL should be used
      * @param networkTimeout socket so timeout
      * @return the socket
+     * @throws IOException on failure
      */
     public static Socket createSocket(InetAddress address, int port, boolean ssl, int networkTimeout)
             throws IOException {
@@ -215,6 +220,7 @@ public class NetUtils {
      *
      * @param socket the socket
      * @return true if it is
+     * @throws UnknownHostException on failure
      */
     public static boolean isLocalAddress(Socket socket)
             throws UnknownHostException {
@@ -339,7 +345,7 @@ public class NetUtils {
                     .append(address[0] & 0xff).append('.') //
                     .append(address[1] & 0xff).append('.') //
                     .append(address[2] & 0xff).append('.') //
-                    .append(address[3] & 0xff).toString();
+                    .append(address[3] & 0xff);
             break;
         case 16:
             short[] a = new short[8];

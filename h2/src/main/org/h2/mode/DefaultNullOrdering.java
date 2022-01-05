@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -62,12 +62,12 @@ public enum DefaultNullOrdering {
     }
 
     /**
-     * Returns a sort type bit mask with {@link #NULLS_FIRST} or
-     * {@link #NULLS_LAST} explicitly set
+     * Returns a sort type bit mask with {@link org.h2.result.SortOrder#NULLS_FIRST} or
+     * {@link org.h2.result.SortOrder#NULLS_LAST} explicitly set
      *
      * @param sortType
      *            sort type bit mask
-     * @return bit mask with {@link #NULLS_FIRST} or {@link #NULLS_LAST}
+     * @return bit mask with {@link org.h2.result.SortOrder#NULLS_FIRST} or {@link org.h2.result.SortOrder#NULLS_LAST}
      *         explicitly set
      */
     public int addExplicitNullOrdering(int sortType) {

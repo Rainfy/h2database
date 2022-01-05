@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -169,6 +169,21 @@ public final class ValueNumeric extends ValueBigDecimalBase {
             return ONE;
         }
         return (ValueNumeric) Value.cache(new ValueNumeric(dec));
+    }
+
+    /**
+     * Get or create a NUMERIC value for the given big decimal with possibly
+     * negative scale. If scale is negative, it is normalized to 0.
+     *
+     * @param dec
+     *            the big decimal
+     * @return the value
+     */
+    public static ValueNumeric getAnyScale(BigDecimal dec) {
+        if (dec.scale() < 0) {
+            dec = dec.setScale(0, RoundingMode.UNNECESSARY);
+        }
+        return get(dec);
     }
 
     /**

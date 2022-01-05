@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -69,21 +69,15 @@ public final class Engine {
                     if (p == null) {
                         fileName = name + Constants.SUFFIX_MV_FILE;
                         if (!FileUtils.exists(fileName)) {
-                            fileName = name + Constants.SUFFIX_PAGE_FILE;
+                            throwNotFound(ifExists, forbidCreation, name);
+                            fileName = name + Constants.SUFFIX_OLD_DATABASE_FILE;
                             if (FileUtils.exists(fileName)) {
-                                ci.setProperty("MV_STORE", "false");
-                            } else {
-                                throwNotFound(ifExists, forbidCreation, name);
-                                fileName = name + Constants.SUFFIX_OLD_DATABASE_FILE;
-                                if (FileUtils.exists(fileName)) {
-                                    throw DbException.getFileVersionError(fileName);
-                                }
-                                fileName = null;
+                                throw DbException.getFileVersionError(fileName);
                             }
+                            fileName = null;
                         }
                     } else {
-                        fileName = name + (Utils.parseBoolean(p, true, false) ? Constants.SUFFIX_MV_FILE
-                                : Constants.SUFFIX_PAGE_FILE);
+                        fileName = name + Constants.SUFFIX_MV_FILE;
                         if (!FileUtils.exists(fileName)) {
                             throwNotFound(ifExists, forbidCreation, name);
                             fileName = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -268,9 +268,10 @@ public abstract class Page<K,V> implements Cloneable {
      * mid-process without tree integrity violation
      *
      * @param map new map to own resulting page
+     * @param eraseChildrenRefs whether cloned Page should have no child references or keep originals
      * @return the page
      */
-    abstract Page<K,V> copy(MVMap<K,V> map);
+    abstract Page<K,V> copy(MVMap<K, V> map, boolean eraseChildrenRefs);
 
     /**
      * Get the key at the given index.
@@ -1099,8 +1100,10 @@ public abstract class Page<K,V> implements Cloneable {
         }
 
         @Override
-        public Page<K,V> copy(MVMap<K,V> map) {
-            return new IncompleteNonLeaf<>(map, this);
+        public Page<K,V> copy(MVMap<K, V> map, boolean eraseChildrenRefs) {
+            return eraseChildrenRefs ?
+                    new IncompleteNonLeaf<>(map, this) :
+                    new NonLeaf<>(map, this, children, totalCount);
         }
 
         @Override
@@ -1440,7 +1443,7 @@ public abstract class Page<K,V> implements Cloneable {
         }
 
         @Override
-        public Page<K,V> copy(MVMap<K,V> map) {
+        public Page<K,V> copy(MVMap<K, V> map, boolean eraseChildrenRefs) {
             return new Leaf<>(map, this);
         }
 
@@ -1456,7 +1459,7 @@ public abstract class Page<K,V> implements Cloneable {
 
         @Override
         public V getValue(int index) {
-            return values[index];
+            return values == null ? null : values[index];
         }
 
         @Override
@@ -1617,7 +1620,7 @@ public abstract class Page<K,V> implements Cloneable {
         protected int calculateMemory() {
 //*
             return super.calculateMemory() + PAGE_LEAF_MEMORY +
-                        map.evaluateMemoryForValues(values, getKeyCount());
+                    (values == null ? 0 : map.evaluateMemoryForValues(values, getKeyCount()));
 /*/
             int keyCount = getKeyCount();
             int mem = super.calculateMemory() + PAGE_LEAF_MEMORY + keyCount * MEMORY_POINTER;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -463,14 +463,8 @@ public class ConnectionInfo implements Cloneable {
                 // but we consider it absolute
                 throw DbException.get(ErrorCode.URL_RELATIVE_TO_CWD, originalURL);
             }
-            String suffix = Constants.SUFFIX_PAGE_FILE;
-            String n;
-            if (FileUtils.exists(name + suffix)) {
-                n = FileUtils.toRealPath(name + suffix);
-            } else {
-                suffix = Constants.SUFFIX_MV_FILE;
-                n = FileUtils.toRealPath(name + suffix);
-            }
+            String suffix = Constants.SUFFIX_MV_FILE;
+            String n = FileUtils.toRealPath(name + suffix);
             String fileName = FileUtils.getName(n);
             if (fileName.length() < suffix.length() + 1) {
                 throw DbException.get(ErrorCode.INVALID_DATABASE_NAME_1, name);

@@ -1,4 +1,4 @@
--- Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+-- Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
 -- and the EPL 1.0 (https://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
@@ -354,11 +354,10 @@ insert into test(id) direct sorted select x from system_range(1, 100);
 > update count: 100
 
 explain insert into test(id) direct sorted select x from system_range(1, 100);
->> INSERT INTO "PUBLIC"."TEST"("ID") DIRECT SORTED SELECT "X" FROM SYSTEM_RANGE(1, 100) /* range index */
+>> INSERT INTO "PUBLIC"."TEST"("ID") DIRECT SELECT "X" FROM SYSTEM_RANGE(1, 100) /* range index */
 
 explain select * from test limit 10;
-#+mvStore#>> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ FETCH FIRST 10 ROWS ONLY
-#-mvStore#>> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ FETCH FIRST 10 ROWS ONLY
+>> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ FETCH FIRST 10 ROWS ONLY
 
 drop table test;
 > ok
@@ -1203,8 +1202,7 @@ explain select * from test where id = 1;
 >> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2: ID = 1 */ WHERE "ID" = 1
 
 EXPLAIN SELECT * FROM TEST WHERE ID = (SELECT MAX(ID) FROM TEST);
-#+mvStore#>> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2: ID = (SELECT MAX(ID) FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */ /* direct lookup */) */ WHERE "ID" = (SELECT MAX("ID") FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ /* direct lookup */)
-#-mvStore#>> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2: ID = (SELECT MAX(ID) FROM PUBLIC.TEST /* PUBLIC.PRIMARY_KEY_2 */ /* direct lookup */) */ WHERE "ID" = (SELECT MAX("ID") FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ /* direct lookup */)
+>> SELECT "PUBLIC"."TEST"."ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2: ID = (SELECT MAX(ID) FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */ /* direct lookup */) */ WHERE "ID" = (SELECT MAX("ID") FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ /* direct lookup */)
 
 drop table test;
 > ok
@@ -1816,10 +1814,9 @@ script nopasswords nosettings noversion blocksize 10;
 > INSERT INTO SYSTEM_LOB_STREAM VALUES(0, 2, ' ', NULL);
 > INSERT INTO "PUBLIC"."TEST" VALUES (1, SYSTEM_COMBINE_CLOB(0));
 > DROP TABLE IF EXISTS SYSTEM_LOB_STREAM;
-> CALL SYSTEM_COMBINE_BLOB(-1);
 > DROP ALIAS IF EXISTS SYSTEM_COMBINE_CLOB;
 > DROP ALIAS IF EXISTS SYSTEM_COMBINE_BLOB;
-> rows (ordered): 16
+> rows (ordered): 15
 
 drop table test;
 > ok
@@ -2615,8 +2612,7 @@ select * from test t1 where id in(id);
 > rows: 2
 
 explain select * from test t1 where id in(select id from test);
-#+mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(SELECT DISTINCT ID FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */) */ WHERE "ID" IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */)
-#-mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(SELECT DISTINCT ID FROM PUBLIC.TEST /* PUBLIC.PRIMARY_KEY_2 */) */ WHERE "ID" IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */)
+>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(SELECT DISTINCT ID FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */) */ WHERE "ID" IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */)
 
 select * from test t1 where id in(select id from test);
 > ID NAME
@@ -2626,8 +2622,7 @@ select * from test t1 where id in(select id from test);
 > rows: 2
 
 explain select * from test t1 where id in(1, select max(id) from test);
-#+mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(1, (SELECT MAX(ID) FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */ /* direct lookup */)) */ WHERE "ID" IN(1, (SELECT MAX("ID") FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ /* direct lookup */))
-#-mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(1, (SELECT MAX(ID) FROM PUBLIC.TEST /* PUBLIC.PRIMARY_KEY_2 */ /* direct lookup */)) */ WHERE "ID" IN(1, (SELECT MAX("ID") FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ /* direct lookup */))
+>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(1, (SELECT MAX(ID) FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */ /* direct lookup */)) */ WHERE "ID" IN(1, (SELECT MAX("ID") FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ /* direct lookup */))
 
 select * from test t1 where id in(1, select max(id) from test);
 > ID NAME
@@ -2976,9 +2971,9 @@ drop table test;
 create table test(id int primary key);
 > ok
 
+-- Column A.ID cannot be referenced here
 explain select * from test a inner join test b left outer join test c on c.id = a.id;
-#+mvStore#>> SELECT "A"."ID", "B"."ID", "C"."ID" FROM "PUBLIC"."TEST" "A" /* PUBLIC.TEST.tableScan */ LEFT OUTER JOIN "PUBLIC"."TEST" "C" /* PUBLIC.PRIMARY_KEY_2: ID = A.ID */ ON "C"."ID" = "A"."ID" INNER JOIN "PUBLIC"."TEST" "B" /* PUBLIC.TEST.tableScan */ ON 1=1
-#-mvStore#>> SELECT "A"."ID", "B"."ID", "C"."ID" FROM "PUBLIC"."TEST" "A" /* PUBLIC.PRIMARY_KEY_2 */ LEFT OUTER JOIN "PUBLIC"."TEST" "C" /* PUBLIC.PRIMARY_KEY_2: ID = A.ID */ ON "C"."ID" = "A"."ID" INNER JOIN "PUBLIC"."TEST" "B" /* PUBLIC.PRIMARY_KEY_2 */ ON 1=1
+> exception COLUMN_NOT_FOUND_1
 
 SELECT T.ID FROM TEST "T";
 > ID
@@ -3725,12 +3720,10 @@ update test set (id, name)=(select id+1, name || 'Ho' from test t1 where test.id
 > update count: 2
 
 explain update test set (id, name)=(id+1, name || 'Hi');
-#+mvStore#>> UPDATE "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ SET "ID" = "ID" + 1, "NAME" = "NAME" || 'Hi'
-#-mvStore#>> UPDATE "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ SET "ID" = "ID" + 1, "NAME" = "NAME" || 'Hi'
+>> UPDATE "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ SET "ID" = "ID" + 1, "NAME" = "NAME" || 'Hi'
 
 explain update test set (id, name)=(select id+1, name || 'Ho' from test t1 where test.id=t1.id);
-#+mvStore#>> UPDATE "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ SET ("ID", "NAME") = (SELECT "ID" + 1, "NAME" || 'Ho' FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID = TEST.ID */ WHERE "TEST"."ID" = "T1"."ID")
-#-mvStore#>> UPDATE "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ SET ("ID", "NAME") = (SELECT "ID" + 1, "NAME" || 'Ho' FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID = TEST.ID */ WHERE "TEST"."ID" = "T1"."ID")
+>> UPDATE "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ SET ("ID", "NAME") = (SELECT "ID" + 1, "NAME" || 'Ho' FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID = TEST.ID */ WHERE "TEST"."ID" = "T1"."ID")
 
 select * from test;
 > ID NAME
@@ -4620,12 +4613,10 @@ EXPLAIN SELECT * FROM TEST WHERE ID=1 GROUP BY NAME, ID;
 >> SELECT "PUBLIC"."TEST"."ID", "PUBLIC"."TEST"."NAME" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2: ID = 1 */ WHERE "ID" = 1 GROUP BY "NAME", "ID"
 
 EXPLAIN PLAN FOR UPDATE TEST SET NAME='Hello', ID=1 WHERE NAME LIKE 'T%' ESCAPE 'x';
-#+mvStore#>> UPDATE "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ SET "ID" = 1, "NAME" = 'Hello' WHERE "NAME" LIKE 'T%' ESCAPE 'x'
-#-mvStore#>> UPDATE "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */ SET "ID" = 1, "NAME" = 'Hello' WHERE "NAME" LIKE 'T%' ESCAPE 'x'
+>> UPDATE "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ SET "ID" = 1, "NAME" = 'Hello' WHERE "NAME" LIKE 'T%' ESCAPE 'x'
 
 EXPLAIN PLAN FOR DELETE FROM TEST;
-#+mvStore#>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
-#-mvStore#>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */
+>> DELETE FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
 
 EXPLAIN PLAN FOR SELECT NAME, COUNT(*) FROM TEST GROUP BY NAME HAVING COUNT(*) > 1;
 >> SELECT "NAME", COUNT(*) FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */ GROUP BY "NAME" HAVING COUNT(*) > 1
@@ -4646,16 +4637,13 @@ EXPLAIN PLAN FOR SELECT * FROM TEST T1 WHERE ID IN(1, 2);
 >> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(1, 2) */ WHERE "ID" IN(1, 2)
 
 EXPLAIN PLAN FOR SELECT * FROM TEST T1 WHERE ID IN(SELECT ID FROM TEST);
-#+mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(SELECT DISTINCT ID FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */) */ WHERE "ID" IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */)
-#-mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(SELECT DISTINCT ID FROM PUBLIC.TEST /* PUBLIC.PRIMARY_KEY_2 */) */ WHERE "ID" IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */)
+>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.PRIMARY_KEY_2: ID IN(SELECT DISTINCT ID FROM PUBLIC.TEST /* PUBLIC.TEST.tableScan */) */ WHERE "ID" IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */)
 
 EXPLAIN PLAN FOR SELECT * FROM TEST T1 WHERE ID NOT IN(SELECT ID FROM TEST);
-#+mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.TEST.tableScan */ WHERE "ID" NOT IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */)
-#-mvStore#>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.TEST.tableScan */ WHERE "ID" NOT IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */)
+>> SELECT "T1"."ID", "T1"."NAME" FROM "PUBLIC"."TEST" "T1" /* PUBLIC.TEST.tableScan */ WHERE "ID" NOT IN( SELECT DISTINCT "ID" FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */)
 
 EXPLAIN PLAN FOR SELECT CAST(ID AS VARCHAR(255)) FROM TEST;
-#+mvStore#>> SELECT CAST("ID" AS CHARACTER VARYING(255)) FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
-#-mvStore#>> SELECT CAST("ID" AS CHARACTER VARYING(255)) FROM "PUBLIC"."TEST" /* PUBLIC.PRIMARY_KEY_2 */
+>> SELECT CAST("ID" AS CHARACTER VARYING(255)) FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
 
 EXPLAIN PLAN FOR SELECT LEFT(NAME, 2) FROM TEST;
 >> SELECT LEFT("NAME", 2) FROM "PUBLIC"."TEST" /* PUBLIC.TEST.tableScan */
@@ -4764,8 +4752,7 @@ EXPLAIN SELECT * FROM CHILDREN EXCEPT SELECT * FROM CHILDREN WHERE CLASS=0;
 >> (SELECT "PUBLIC"."CHILDREN"."ID", "PUBLIC"."CHILDREN"."NAME", "PUBLIC"."CHILDREN"."CLASS" FROM "PUBLIC"."CHILDREN" /* PUBLIC.CHILDREN.tableScan */) EXCEPT (SELECT "PUBLIC"."CHILDREN"."ID", "PUBLIC"."CHILDREN"."NAME", "PUBLIC"."CHILDREN"."CLASS" FROM "PUBLIC"."CHILDREN" /* PUBLIC.CHILDREN.tableScan */ WHERE "CLASS" = 0)
 
 EXPLAIN SELECT CLASS FROM CHILDREN INTERSECT SELECT ID FROM CLASSES;
-#+mvStore#>> (SELECT "CLASS" FROM "PUBLIC"."CHILDREN" /* PUBLIC.CHILDREN.tableScan */) INTERSECT (SELECT "ID" FROM "PUBLIC"."CLASSES" /* PUBLIC.CLASSES.tableScan */)
-#-mvStore#>> (SELECT "CLASS" FROM "PUBLIC"."CHILDREN" /* PUBLIC.CHILDREN.tableScan */) INTERSECT (SELECT "ID" FROM "PUBLIC"."CLASSES" /* PUBLIC.PRIMARY_KEY_5 */)
+>> (SELECT "CLASS" FROM "PUBLIC"."CHILDREN" /* PUBLIC.CHILDREN.tableScan */) INTERSECT (SELECT "ID" FROM "PUBLIC"."CLASSES" /* PUBLIC.CLASSES.tableScan */)
 
 SELECT CLASS FROM CHILDREN INTERSECT SELECT ID FROM CLASSES;
 > CLASS

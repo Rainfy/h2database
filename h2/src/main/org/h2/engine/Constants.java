@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -15,28 +15,28 @@ public class Constants {
     /**
      * The build date is updated for each public release.
      */
-    public static final String BUILD_DATE = "2019-10-14";
+    public static final String BUILD_DATE = "2021-12-21";
 
     /**
      * The build date of the last stable release.
      */
-    public static final String BUILD_DATE_STABLE = "2019-03-13";
+    public static final String BUILD_DATE_STABLE = "2021-12-21";
 
     /**
      * Sequential version number. Even numbers are used for official releases,
      * odd numbers are used for development builds.
      */
-    public static final int BUILD_ID = 201;
+    public static final int BUILD_ID = 209;
 
     /**
      * The build id of the last stable release.
      */
-    public static final int BUILD_ID_STABLE = 199;
+    public static final int BUILD_ID_STABLE = 204;
 
     /**
      * Whether this is a snapshot version.
      */
-    public static final boolean BUILD_SNAPSHOT = false;
+    public static final boolean BUILD_SNAPSHOT = true;
 
     /**
      * If H2 is compiled to be included in a product, this should be set to
@@ -45,24 +45,6 @@ public class Constants {
      * Example: ACME_SVN1651_BUILD3
      */
     public static final String BUILD_VENDOR_AND_VERSION = null;
-
-    /**
-     * The TCP protocol version number 14.
-     * @since 1.3.176 (2014-04-05)
-     */
-    public static final int TCP_PROTOCOL_VERSION_14 = 14;
-
-    /**
-     * The TCP protocol version number 15.
-     * @since 1.4.178 Beta (2014-05-02)
-     */
-    public static final int TCP_PROTOCOL_VERSION_15 = 15;
-
-    /**
-     * The TCP protocol version number 16.
-     * @since 1.4.194 (2017-03-10)
-     */
-    public static final int TCP_PROTOCOL_VERSION_16 = 16;
 
     /**
      * The TCP protocol version number 17.
@@ -84,14 +66,14 @@ public class Constants {
 
     /**
      * The TCP protocol version number 20.
-     * @since 2.0.202 (TODO)
+     * @since 2.0.202 (2021-11-25)
      */
     public static final int TCP_PROTOCOL_VERSION_20 = 20;
 
     /**
      * Minimum supported version of TCP protocol.
      */
-    public static final int TCP_PROTOCOL_VERSION_MIN_SUPPORTED = TCP_PROTOCOL_VERSION_14;
+    public static final int TCP_PROTOCOL_VERSION_MIN_SUPPORTED = TCP_PROTOCOL_VERSION_17;
 
     /**
      * Maximum supported version of TCP protocol.
@@ -106,7 +88,7 @@ public class Constants {
     /**
      * The minor version of this database.
      */
-    public static final int VERSION_MINOR = 0;
+    public static final int VERSION_MINOR = 1;
 
     /**
      * The lock mode that means no locking is used at all.
@@ -162,11 +144,6 @@ public class Constants {
      * The minimum number of entries to keep in the cache.
      */
     public static final int CACHE_MIN_RECORDS = 16;
-
-    /**
-     * The default cache size in KB for each GB of RAM.
-     */
-    public static final int CACHE_SIZE_DEFAULT = 64 * 1024;
 
     /**
      * The default cache type.
@@ -225,16 +202,6 @@ public class Constants {
      * itself, and not in a separate place.
      */
     public static final int DEFAULT_MAX_LENGTH_INPLACE_LOB = 256;
-
-    /**
-     * The default value for the maximum transaction log size.
-     */
-    public static final long DEFAULT_MAX_LOG_SIZE = 16 * 1024 * 1024;
-
-    /**
-     * The default value for the MAX_MEMORY_UNDO setting.
-     */
-    public static final int DEFAULT_MAX_MEMORY_UNDO = 50_000;
 
     /**
      * The default for the setting MAX_OPERATION_MEMORY.
@@ -329,16 +296,6 @@ public class Constants {
     public static final int MAX_PARAMETER_INDEX = 100_000;
 
     /**
-     * The memory needed by a object of class Data
-     */
-    public static final int MEMORY_DATA = 24;
-
-    /**
-     * This value is used to calculate the average memory usage.
-     */
-    public static final int MEMORY_FACTOR = 64;
-
-    /**
      * The memory needed by a regular object with at least one field.
      */
     // Java 6, 64 bit: 24
@@ -361,11 +318,6 @@ public class Constants {
      * The memory needed by a Row.
      */
     public static final int MEMORY_ROW = 40;
-
-    /**
-     * The minimum write delay that causes commits to be delayed.
-     */
-    public static final int MIN_WRITE_DELAY = 5;
 
     /**
      * The name prefix used for indexes that are not explicitly named.
@@ -456,11 +408,6 @@ public class Constants {
     public static final String START_URL = "jdbc:h2:";
 
     /**
-     * The file name suffix of all database files.
-     */
-    public static final String SUFFIX_DB_FILE = ".db";
-
-    /**
      * The file name suffix of file lock files that are used to make sure a
      * database is open by only one process at any time.
      */
@@ -471,10 +418,6 @@ public class Constants {
      */
     public static final String SUFFIX_OLD_DATABASE_FILE = ".data.db";
 
-    /**
-     * The file name suffix of page files.
-     */
-    public static final String SUFFIX_PAGE_FILE = ".h2.db";
     /**
      * The file name suffix of a MVStore file.
      */
@@ -506,11 +449,6 @@ public class Constants {
      * THROTTLE has been used.
      */
     public static final int THROTTLE_DELAY = 50;
-
-    /**
-     * The maximum size of an undo log block.
-     */
-    public static final int UNDO_BLOCK_SIZE = 1024 * 1024;
 
     /**
      * The database URL format in simplified Backus-Naur form.
@@ -555,7 +493,7 @@ public class Constants {
     /**
      * The last stable version name.
      */
-    public static final String VERSION_STABLE = "1.4." + BUILD_ID_STABLE;
+    public static final String VERSION_STABLE = "2.0." + BUILD_ID_STABLE;
 
     /**
      * The complete version number of this database, consisting of

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -37,6 +37,7 @@ public interface AggregateFunction {
      *
      * @param inputTypes the SQL type of the parameters, {@link java.sql.Types}
      * @return the SQL type of the result
+     * @throws SQLException on failure
      */
     int getType(int[] inputTypes) throws SQLException;
 
@@ -46,6 +47,7 @@ public interface AggregateFunction {
      * those are passed as array.
      *
      * @param value the value(s) for this row
+     * @throws SQLException on failure
      */
     void add(Object value) throws SQLException;
 
@@ -55,6 +57,7 @@ public interface AggregateFunction {
      * more values were added since its previous invocation.
      *
      * @return the aggregated value
+     * @throws SQLException on failure
      */
     Object getResult() throws SQLException;
 

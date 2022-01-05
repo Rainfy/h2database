@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -103,6 +103,7 @@ public class FullText {
      * </pre>
      *
      * @param conn the connection
+     * @throws SQLException on failure
      */
     public static void init(Connection conn) throws SQLException {
         Statement stat = conn.createStatement();
@@ -165,6 +166,7 @@ public class FullText {
      * @param schema the schema name of the table (case sensitive)
      * @param table the table name (case sensitive)
      * @param columnList the column list (null for all columns)
+     * @throws SQLException on failure
      */
     public static void createIndex(Connection conn, String schema,
             String table, String columnList) throws SQLException {
@@ -184,6 +186,7 @@ public class FullText {
      * usually not needed, as the index is kept up-to-date automatically.
      *
      * @param conn the connection
+     * @throws SQLException on failure
      */
     public static void reindex(Connection conn) throws SQLException {
         init(conn);
@@ -210,6 +213,7 @@ public class FullText {
      * @param conn the connection
      * @param schema the schema name of the table (case sensitive)
      * @param table the table name (case sensitive)
+     * @throws SQLException on failure
      */
     public static void dropIndex(Connection conn, String schema, String table)
             throws SQLException {
@@ -252,6 +256,7 @@ public class FullText {
      * Drops all full text indexes from the database.
      *
      * @param conn the connection
+     * @throws SQLException on failure
      */
     public static void dropAll(Connection conn) throws SQLException {
         init(conn);
@@ -279,6 +284,7 @@ public class FullText {
      * @param limit the maximum number of rows or 0 for no limit
      * @param offset the offset or 0 for no offset
      * @return the result set
+     * @throws SQLException on failure
      */
     public static ResultSet search(Connection conn, String text, int limit,
             int offset) throws SQLException {
@@ -310,6 +316,7 @@ public class FullText {
      * @param limit the maximum number of rows or 0 for no limit
      * @param offset the offset or 0 for no offset
      * @return the result set
+     * @throws SQLException on failure
      */
     public static ResultSet searchData(Connection conn, String text, int limit,
             int offset) throws SQLException {
@@ -328,6 +335,7 @@ public class FullText {
      *
      * @param conn the connection
      * @param commaSeparatedList the list
+     * @throws SQLException on failure
      */
     public static void setIgnoreList(Connection conn, String commaSeparatedList)
             throws SQLException {
@@ -353,6 +361,7 @@ public class FullText {
      *
      * @param conn the connection
      * @param whitespaceChars the list of characters
+     * @throws SQLException on failure
      */
     public static void setWhitespaceChars(Connection conn,
             String whitespaceChars) throws SQLException {
@@ -377,6 +386,7 @@ public class FullText {
      * @param data the object
      * @param type the SQL type
      * @return the string
+     * @throws SQLException on failure
      */
     protected static String asString(Object data, int type) throws SQLException {
         if (data == null) {
@@ -477,6 +487,7 @@ public class FullText {
      * @param data the object
      * @param type the SQL type
      * @return the SQL String
+     * @throws SQLException on failure
      */
     protected static String quoteSQL(Object data, int type) throws SQLException {
         if (data == null) {
@@ -506,7 +517,7 @@ public class FullText {
         case Types.LONGVARBINARY:
         case Types.BINARY:
             if (data instanceof UUID) {
-                return "'" + data.toString() + "'";
+                return "'" + data + "'";
             }
             byte[] bytes = (byte[]) data;
             StringBuilder builder = new StringBuilder(bytes.length * 2 + 2).append('\'');
@@ -533,6 +544,7 @@ public class FullText {
      *
      * @param conn the database connection
      * @param prefix the prefix
+     * @throws SQLException on failure
      */
     protected static void removeAllTriggers(Connection conn, String prefix)
             throws SQLException {
@@ -557,6 +569,7 @@ public class FullText {
      * @param index the column indices (will be modified)
      * @param keys the key list
      * @param columns the column list
+     * @throws SQLException on failure
      */
     protected static void setColumns(int[] index, ArrayList<String> keys,
             ArrayList<String> columns) throws SQLException {
@@ -586,6 +599,7 @@ public class FullText {
      * @param offset the offset
      * @param data whether the raw data should be returned
      * @return the result set
+     * @throws SQLException on failure
      */
     protected static ResultSet search(Connection conn, String text, int limit,
             int offset, boolean data) throws SQLException {
@@ -743,6 +757,7 @@ public class FullText {
      * @param conn the database connection
      * @param schema the schema name
      * @param table the table name
+     * @throws SQLException on failure
      */
     private static void createTrigger(Connection conn, String schema,
             String table) throws SQLException {
@@ -756,7 +771,6 @@ public class FullText {
                     + StringUtils.quoteIdentifier(TRIGGER_PREFIX + table);
             stat.execute("DROP TRIGGER IF EXISTS " + trigger);
             if (create) {
-                boolean multiThread = FullTextTrigger.isMultiThread(conn);
                 StringBuilder buff = new StringBuilder(
                         "CREATE TRIGGER IF NOT EXISTS ");
                 // unless multithread, trigger needs to be called on rollback as well,
@@ -764,9 +778,6 @@ public class FullText {
                 // (not the user connection)
                 buff.append(trigger).
                         append(" AFTER INSERT, UPDATE, DELETE");
-                if(!multiThread) {
-                    buff.append(", ROLLBACK");
-                }
                 buff.append(" ON ");
                 StringUtils.quoteIdentifier(buff, schema).
                         append('.');
@@ -785,6 +796,7 @@ public class FullText {
      * @param conn the database connection
      * @param schema the schema name
      * @param table the table name
+     * @throws SQLException on failure
      */
     private static void indexExistingRows(Connection conn, String schema,
             String table) throws SQLException {
@@ -859,8 +871,6 @@ public class FullText {
         private FullTextSettings          setting;
         private IndexInfo                 index;
         private int[]                     columnTypes;
-        private final PreparedStatement[] prepStatements = new PreparedStatement[SQL.length];
-        private boolean                   useOwnConnection;
 
         private static final int INSERT_WORD = 0;
         private static final int INSERT_ROW  = 1;
@@ -869,7 +879,7 @@ public class FullText {
         private static final int DELETE_MAP  = 4;
         private static final int SELECT_ROW  = 5;
 
-        private static final String SQL[] = {
+        private static final String[] SQL = {
             "MERGE INTO " + SCHEMA + ".WORDS(NAME) KEY(NAME) VALUES(?)",
             "INSERT INTO " + SCHEMA + ".ROWS(HASH, INDEXID, `KEY`) VALUES(?, ?, ?)",
             "INSERT INTO " + SCHEMA + ".MAP(ROWID, WORDID) VALUES(?, ?)",
@@ -880,6 +890,7 @@ public class FullText {
 
         /**
          * INTERNAL
+         * @see Trigger#init(Connection, String, String, String, boolean, int)
          */
         @Override
         public void init(Connection conn, String schemaName, String triggerName,
@@ -943,34 +954,11 @@ public class FullText {
             index.indexColumns = new int[indexList.size()];
             setColumns(index.indexColumns, indexList, columnList);
             setting.addIndexInfo(index);
-
-            useOwnConnection = isMultiThread(conn);
-            if(!useOwnConnection) {
-                for (int i = 0; i < SQL.length; i++) {
-                    prepStatements[i] = conn.prepareStatement(SQL[i],
-                            Statement.RETURN_GENERATED_KEYS);
-                }
-            }
-        }
-
-        /**
-         * Check whether the database is in multi-threaded mode.
-         *
-         * @param conn the connection
-         * @return true if the multi-threaded mode is used
-         */
-        static boolean isMultiThread(Connection conn)
-                throws SQLException {
-            try (Statement stat = conn.createStatement()) {
-                ResultSet rs = stat.executeQuery(
-                                "SELECT SETTING_VALUE FROM INFORMATION_SCHEMA.SETTINGS" +
-                                " WHERE SETTING_NAME = 'MV_STORE'");
-                return rs.next() && "true".equals(rs.getString(1));
-            }
         }
 
         /**
          * INTERNAL
+         * @see Trigger#fire(Connection, Object[], Object[])
          */
         @Override
         public void fire(Connection conn, Object[] oldRow, Object[] newRow)
@@ -1013,8 +1001,9 @@ public class FullText {
          *
          * @param conn to use
          * @param row the row
+         * @throws SQLException on failure
          */
-        protected void insert(Connection conn, Object[] row) throws SQLException {
+        private void insert(Connection conn, Object[] row) throws SQLException {
             PreparedStatement prepInsertRow = null;
             PreparedStatement prepInsertMap = null;
             try {
@@ -1037,10 +1026,8 @@ public class FullText {
                     prepInsertMap.execute();
                 }
             } finally {
-                if (useOwnConnection) {
-                    IOUtils.closeSilently(prepInsertRow);
-                    IOUtils.closeSilently(prepInsertMap);
-                }
+                IOUtils.closeSilently(prepInsertRow);
+                IOUtils.closeSilently(prepInsertMap);
             }
         }
 
@@ -1049,8 +1036,9 @@ public class FullText {
          *
          * @param conn to use
          * @param row the row
+         * @throws SQLException on failure
          */
-        protected void delete(Connection conn, Object[] row) throws SQLException {
+        private void delete(Connection conn, Object[] row) throws SQLException {
             PreparedStatement prepSelectRow = null;
             PreparedStatement prepDeleteMap = null;
             PreparedStatement prepDeleteRow = null;
@@ -1078,11 +1066,9 @@ public class FullText {
                     prepDeleteRow.executeUpdate();
                 }
             } finally {
-                if (useOwnConnection) {
-                    IOUtils.closeSilently(prepSelectRow);
-                    IOUtils.closeSilently(prepDeleteMap);
-                    IOUtils.closeSilently(prepDeleteRow);
-                }
+                IOUtils.closeSilently(prepSelectRow);
+                IOUtils.closeSilently(prepDeleteMap);
+                IOUtils.closeSilently(prepDeleteRow);
             }
         }
 
@@ -1130,9 +1116,7 @@ public class FullText {
                 Arrays.sort(wordIds);
                 return wordIds;
             } finally {
-                if (useOwnConnection) {
-                    IOUtils.closeSilently(prepInsertWord);
-                }
+                IOUtils.closeSilently(prepInsertWord);
             }
         }
 
@@ -1155,10 +1139,8 @@ public class FullText {
             return builder.toString();
         }
 
-        private PreparedStatement getStatement(Connection conn, int index) throws SQLException {
-            return useOwnConnection ?
-                    conn.prepareStatement(SQL[index], Statement.RETURN_GENERATED_KEYS)
-                    : prepStatements[index];
+        private static PreparedStatement getStatement(Connection conn, int index) throws SQLException {
+            return conn.prepareStatement(SQL[index], Statement.RETURN_GENERATED_KEYS);
         }
 
     }

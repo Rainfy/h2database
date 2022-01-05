@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -1651,7 +1651,13 @@ public abstract class TestBase {
         }
     }
 
-    private static void checkErrorCode(int expectedErrorCode, Throwable t) throws AssertionError {
+    /**
+     * Verify that actual error code is the one expected
+     * @param expectedErrorCode to compare against
+     * @param t actual exception to extract error code from
+     * @throws AssertionError if code is unexpected
+     */
+    public static void checkErrorCode(int expectedErrorCode, Throwable t) throws AssertionError {
         int errorCode;
         if (t instanceof DbException) {
             errorCode = ((DbException) t).getErrorCode();

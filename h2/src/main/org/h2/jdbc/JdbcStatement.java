@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -106,7 +106,7 @@ public class JdbcStatement extends TraceObject implements Statement, JdbcStateme
                 if (!lazy) {
                     command.close();
                 }
-                resultSet = new JdbcResultSet(conn, this, command, result, id, scrollable, updatable);
+                resultSet = new JdbcResultSet(conn, this, command, result, id, scrollable, updatable, false);
             }
             return resultSet;
         } catch (Exception e) {
@@ -192,7 +192,7 @@ public class JdbcStatement extends TraceObject implements Statement, JdbcStateme
                 ResultInterface gk = result.getGeneratedKeys();
                 if (gk != null) {
                     int id = getNextId(TraceObject.RESULT_SET);
-                    generatedKeys = new JdbcResultSet(conn, this, command, gk, id, true, false);
+                    generatedKeys = new JdbcResultSet(conn, this, command, gk, id, true, false, false);
                 }
             } finally {
                 setExecutingStatement(null);
@@ -246,14 +246,14 @@ public class JdbcStatement extends TraceObject implements Statement, JdbcStateme
                     boolean updatable = resultSetConcurrency == ResultSet.CONCUR_UPDATABLE;
                     ResultInterface result = command.executeQuery(maxRows, scrollable);
                     lazy = result.isLazy();
-                    resultSet = new JdbcResultSet(conn, this, command, result, id, scrollable, updatable);
+                    resultSet = new JdbcResultSet(conn, this, command, result, id, scrollable, updatable, false);
                 } else {
                     returnsResultSet = false;
                     ResultWithGeneratedKeys result = command.executeUpdate(generatedKeysRequest);
                     updateCount = result.getUpdateCount();
                     ResultInterface gk = result.getGeneratedKeys();
                     if (gk != null) {
-                        generatedKeys = new JdbcResultSet(conn, this, command, gk, id, true, false);
+                        generatedKeys = new JdbcResultSet(conn, this, command, gk, id, true, false, false);
                     }
                 }
             } finally {
@@ -890,12 +890,7 @@ public class JdbcStatement extends TraceObject implements Statement, JdbcStateme
             }
             checkClosed();
             if (generatedKeys == null) {
-                if (session.isSupportsGeneratedKeys()) {
-                    generatedKeys = new JdbcResultSet(conn, this, null, new SimpleResult(), id, true, false);
-                } else {
-                    // Old server, use SCOPE_IDENTITY()
-                    generatedKeys = conn.getGeneratedKeys(this, id);
-                }
+                generatedKeys = new JdbcResultSet(conn, this, null, new SimpleResult(), id, true, false, false);
             }
             return generatedKeys;
         } catch (Exception e) {

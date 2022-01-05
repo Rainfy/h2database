@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -13,13 +13,12 @@ import org.h2.command.query.AllColumnsForPlan;
 import org.h2.engine.DbObject;
 import org.h2.engine.Right;
 import org.h2.engine.SessionLocal;
-import org.h2.engine.UndoLogRecord;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionVisitor;
 import org.h2.message.DbException;
+import org.h2.result.LocalResult;
 import org.h2.result.ResultTarget;
 import org.h2.result.Row;
-import org.h2.result.RowList;
 import org.h2.table.DataChangeDeltaTable.ResultOption;
 import org.h2.table.PlanItem;
 import org.h2.table.Table;
@@ -45,7 +44,7 @@ public final class Delete extends FilteredDataChangeStatement {
         Table table = targetTableFilter.getTable();
         session.getUser().checkTableRight(table, Right.DELETE);
         table.fire(session, Trigger.DELETE, true);
-        table.lock(session, true, false);
+        table.lock(session, Table.WRITE_LOCK);
         long limitRows = -1;
         if (fetchExpr != null) {
             Value v = fetchExpr.getValue(session);
@@ -53,12 +52,12 @@ public final class Delete extends FilteredDataChangeStatement {
                 throw DbException.getInvalidValueException("FETCH", v);
             }
         }
-        try (RowList rows = new RowList(session, table)) {
+        try (LocalResult rows = LocalResult.forTable(session, table)) {
             setCurrentRowNumber(0);
             long count = 0;
             while (nextRow(limitRows, count)) {
                 Row row = targetTableFilter.get();
-                if (table.isMVStore()) {
+                if (table.isRowLockable()) {
                     Row lockedRow = table.lockRow(session, row);
                     if (lockedRow == null) {
                         continue;
@@ -75,23 +74,22 @@ public final class Delete extends FilteredDataChangeStatement {
                     deltaChangeCollector.addRow(row.getValueList());
                 }
                 if (!table.fireRow() || !table.fireBeforeRow(session, row, null)) {
-                    rows.add(row);
+                    rows.addRowForTable(row);
                 }
                 count++;
             }
+            rows.done();
             long rowScanCount = 0;
-            for (rows.reset(); rows.hasNext();) {
+            while (rows.next()) {
                 if ((++rowScanCount & 127) == 0) {
                     checkCanceled();
                 }
-                Row row = rows.next();
+                Row row = rows.currentRowForTable();
                 table.removeRow(session, row);
-                session.log(table, UndoLogRecord.DELETE, row);
             }
             if (table.fireRow()) {
-                for (rows.reset(); rows.hasNext();) {
-                    Row row = rows.next();
-                    table.fireAfterRow(session, row, null, false);
+                for (rows.reset(); rows.next();) {
+                    table.fireAfterRow(session, rows.currentRowForTable(), null, false);
                 }
             }
             table.fire(session, Trigger.DELETE, false);

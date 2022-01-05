@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -158,14 +158,6 @@ public abstract class Session implements CastDataProvider, AutoCloseable {
     public abstract void cancel();
 
     /**
-     * Returns the TCP protocol version of remote connection, or the latest
-     * supported TCP protocol version for local session.
-     *
-     * @return the TCP protocol version
-     */
-    public abstract int getClientVersion();
-
-    /**
      * Check if this session is in auto-commit mode.
      *
      * @return true if the session is in auto-commit mode
@@ -208,14 +200,6 @@ public abstract class Session implements CastDataProvider, AutoCloseable {
      * @return the current schema name
      */
     public abstract String getCurrentSchemaName();
-
-    /**
-     * Returns is this session supports generated keys.
-     *
-     * @return {@code true} if generated keys are supported, {@code false} if only
-     *         {@code SCOPE_IDENTITY()} is supported
-     */
-    public abstract boolean isSupportsGeneratedKeys();
 
     /**
      * Sets the network connection information if possible.
@@ -302,6 +286,25 @@ public abstract class Session implements CastDataProvider, AutoCloseable {
         while (result.next()) {
             sessionState.add(result.currentRow()[0].getString());
         }
+    }
+
+    /**
+     * Sets this session as thread local session, if this session is a local
+     * session.
+     *
+     * @return old thread local session, or {@code null}
+     */
+    public Session setThreadLocalSession() {
+        return null;
+    }
+
+    /**
+     * Resets old thread local session.
+     *
+     * @param oldSession
+     *            the old thread local session, or {@code null}
+     */
+    public void resetThreadLocalSession(Session oldSession) {
     }
 
 }

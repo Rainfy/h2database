@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -22,6 +22,7 @@ import org.h2.engine.ConnectionInfo;
 import org.h2.engine.Constants;
 import org.h2.engine.Engine;
 import org.h2.engine.GeneratedKeysMode;
+import org.h2.engine.Session;
 import org.h2.engine.SessionLocal;
 import org.h2.engine.SessionRemote;
 import org.h2.engine.SysProperties;
@@ -279,9 +280,8 @@ public class TcpServerThread implements Runnable {
     private void process() throws IOException {
         int operation = transfer.readInt();
         switch (operation) {
-        case SessionRemote.SESSION_PREPARE_READ_PARAMS:
-        case SessionRemote.SESSION_PREPARE_READ_PARAMS2:
-        case SessionRemote.SESSION_PREPARE: {
+        case SessionRemote.SESSION_PREPARE:
+        case SessionRemote.SESSION_PREPARE_READ_PARAMS2: {
             int id = transfer.readInt();
             String sql = transfer.readString();
             int old = session.getModificationId();
@@ -293,7 +293,7 @@ public class TcpServerThread implements Runnable {
             transfer.writeInt(getState(old)).writeBoolean(isQuery).
                     writeBoolean(readonly);
 
-            if (operation == SessionRemote.SESSION_PREPARE_READ_PARAMS2) {
+            if (operation != SessionRemote.SESSION_PREPARE) {
                 transfer.writeInt(command.getCommandType());
             }
 
@@ -369,43 +369,38 @@ public class TcpServerThread implements Runnable {
             int id = transfer.readInt();
             Command command = (Command) cache.getObject(id, false);
             setParameters(command);
-            boolean supportsGeneratedKeys = clientVersion >= Constants.TCP_PROTOCOL_VERSION_17;
-            boolean writeGeneratedKeys = supportsGeneratedKeys;
+            boolean writeGeneratedKeys = true;
             Object generatedKeysRequest;
-            if (supportsGeneratedKeys) {
-                int mode = transfer.readInt();
-                switch (mode) {
-                case GeneratedKeysMode.NONE:
-                    generatedKeysRequest = false;
-                    writeGeneratedKeys = false;
-                    break;
-                case GeneratedKeysMode.AUTO:
-                    generatedKeysRequest = true;
-                    break;
-                case GeneratedKeysMode.COLUMN_NUMBERS: {
-                    int len = transfer.readInt();
-                    int[] keys = new int[len];
-                    for (int i = 0; i < len; i++) {
-                        keys[i] = transfer.readInt();
-                    }
-                    generatedKeysRequest = keys;
-                    break;
-                }
-                case GeneratedKeysMode.COLUMN_NAMES: {
-                    int len = transfer.readInt();
-                    String[] keys = new String[len];
-                    for (int i = 0; i < len; i++) {
-                        keys[i] = transfer.readString();
-                    }
-                    generatedKeysRequest = keys;
-                    break;
-                }
-                default:
-                    throw DbException.get(ErrorCode.CONNECTION_BROKEN_1,
-                            "Unsupported generated keys' mode " + mode);
-                }
-            } else {
+            int mode = transfer.readInt();
+            switch (mode) {
+            case GeneratedKeysMode.NONE:
                 generatedKeysRequest = false;
+                writeGeneratedKeys = false;
+                break;
+            case GeneratedKeysMode.AUTO:
+                generatedKeysRequest = true;
+                break;
+            case GeneratedKeysMode.COLUMN_NUMBERS: {
+                int len = transfer.readInt();
+                int[] keys = new int[len];
+                for (int i = 0; i < len; i++) {
+                    keys[i] = transfer.readInt();
+                }
+                generatedKeysRequest = keys;
+                break;
+            }
+            case GeneratedKeysMode.COLUMN_NAMES: {
+                int len = transfer.readInt();
+                String[] keys = new String[len];
+                for (int i = 0; i < len; i++) {
+                    keys[i] = transfer.readString();
+                }
+                generatedKeysRequest = keys;
+                break;
+            }
+            default:
+                throw DbException.get(ErrorCode.CONNECTION_BROKEN_1,
+                        "Unsupported generated keys' mode " + mode);
             }
             int old = session.getModificationId();
             ResultWithGeneratedKeys result;
@@ -483,11 +478,9 @@ public class TcpServerThread implements Runnable {
             if (clientVersion >= Constants.TCP_PROTOCOL_VERSION_20) {
                 session.setTimeZone(TimeZoneProvider.ofId(transfer.readString()));
             }
-            transfer.writeInt(SessionRemote.STATUS_OK);
-            if (clientVersion >= Constants.TCP_PROTOCOL_VERSION_15) {
-                transfer.writeBoolean(session.getAutoCommit());
-            }
-            transfer.flush();
+            transfer.writeInt(SessionRemote.STATUS_OK)
+                .writeBoolean(session.getAutoCommit())
+                .flush();
             break;
         }
         case SessionRemote.SESSION_SET_AUTOCOMMIT: {
@@ -573,31 +566,38 @@ public class TcpServerThread implements Runnable {
     private void sendRows(ResultInterface result, long count) throws IOException {
         int columnCount = result.getVisibleColumnCount();
         boolean lazy = result.isLazy();
-        while (count-- > 0L) {
-            boolean hasNext;
-            try {
-                hasNext = result.next();
-            } catch (Exception e) {
-                transfer.writeByte((byte) -1);
-                sendError(e, false);
-                break;
-            }
-            if (hasNext) {
-                transfer.writeByte((byte) 1);
-                Value[] values = result.currentRow();
-                for (int i = 0; i < columnCount; i++) {
-                    Value v = values[i];
-                    if (lazy && v instanceof ValueLob) {
-                        ValueLob v2 = ((ValueLob) v).copyToResult();
-                        if (v2 != v) {
-                            v = session.addTemporaryLob(v2);
-                        }
-                    }
-                    transfer.writeValue(v);
+        Session oldSession = lazy ? session.setThreadLocalSession() : null;
+        try {
+            while (count-- > 0L) {
+                boolean hasNext;
+                try {
+                    hasNext = result.next();
+                } catch (Exception e) {
+                    transfer.writeByte((byte) -1);
+                    sendError(e, false);
+                    break;
                 }
-            } else {
-                transfer.writeByte((byte) 0);
-                break;
+                if (hasNext) {
+                    transfer.writeByte((byte) 1);
+                    Value[] values = result.currentRow();
+                    for (int i = 0; i < columnCount; i++) {
+                        Value v = values[i];
+                        if (lazy && v instanceof ValueLob) {
+                            ValueLob v2 = ((ValueLob) v).copyToResult();
+                            if (v2 != v) {
+                                v = session.addTemporaryLob(v2);
+                            }
+                        }
+                        transfer.writeValue(v);
+                    }
+                } else {
+                    transfer.writeByte((byte) 0);
+                    break;
+                }
+            }
+        } finally {
+            if (lazy) {
+                session.resetThreadLocalSession(oldSession);
             }
         }
     }

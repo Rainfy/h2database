@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -181,7 +181,6 @@ public final class Upgrade {
 
     private static void rename(String name, boolean back) throws IOException {
         rename(name, Constants.SUFFIX_MV_FILE, back);
-        rename(name, Constants.SUFFIX_PAGE_FILE, back);
         rename(name, ".lobs.db", back);
     }
 

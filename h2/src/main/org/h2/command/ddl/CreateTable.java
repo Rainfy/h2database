@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -34,7 +34,6 @@ public class CreateTable extends CommandWithColumns {
     private boolean onCommitTruncate;
     private Query asQuery;
     private String comment;
-    private boolean sortedInsertMode;
     private boolean withNoData;
 
     public CreateTable(SessionLocal session, Schema schema) {
@@ -106,7 +105,6 @@ public class CreateTable extends CommandWithColumns {
         }
         changePrimaryKeysToNotNull(data.columns);
         data.id = getObjectId();
-        data.create = create;
         data.session = session;
         Table table = schema.createTable(data);
         ArrayList<Sequence> sequences = generateSequences(data.columns, data.temporary);
@@ -164,12 +162,9 @@ public class CreateTable extends CommandWithColumns {
                         }
                     }
                 }
-                boolean old = session.isUndoLogEnabled();
                 try {
-                    session.setUndoLogEnabled(false);
                     session.startStatementWithinTransaction(null);
                     Insert insert = new Insert(session);
-                    insert.setSortedInsertMode(sortedInsertMode);
                     insert.setQuery(asQuery);
                     insert.setTable(table);
                     insert.setInsertFromSelect(true);
@@ -177,7 +172,6 @@ public class CreateTable extends CommandWithColumns {
                     insert.update();
                 } finally {
                     session.endStatement();
-                    session.setUndoLogEnabled(old);
                 }
                 if (flushSequences) {
                     db.lockMeta(session);
@@ -245,10 +239,6 @@ public class CreateTable extends CommandWithColumns {
         if (!persistData) {
             data.persistIndexes = false;
         }
-    }
-
-    public void setSortedInsertMode(boolean sortedInsertMode) {
-        this.sortedInsertMode = sortedInsertMode;
     }
 
     public void setWithNoData(boolean withNoData) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
-import org.h2.mvstore.MVStoreException;
 import org.h2.mvstore.StreamStore;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.TestBase;
@@ -87,8 +86,7 @@ public class TestStreamStore extends TestBase {
             }
             fail();
         } catch (IOException e) {
-            assertEquals(DataUtils.ERROR_BLOCK_NOT_FOUND,
-                    ((MVStoreException) e.getCause()).getErrorCode());
+            checkErrorCode(DataUtils.ERROR_BLOCK_NOT_FOUND, e.getCause());
         }
     }
 

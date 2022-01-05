@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -88,18 +88,8 @@ public final class CompatibilitySequenceValueFunction extends Function1_2 {
             if (!current) {
                 return false;
             }
-            //$FALL-THROUGH$
-        case ExpressionVisitor.OPTIMIZABLE_AGGREGATE:
-        case ExpressionVisitor.EVALUATABLE:
-        case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
-        case ExpressionVisitor.NOT_FROM_RESOLVER:
-        case ExpressionVisitor.GET_DEPENDENCIES:
-        case ExpressionVisitor.GET_COLUMNS1:
-        case ExpressionVisitor.GET_COLUMNS2:
-            return super.isEverything(visitor);
-        default:
-            throw DbException.getInternalError("type=" + visitor.getType());
         }
+        return super.isEverything(visitor);
     }
 
     @Override

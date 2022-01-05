@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2021 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * Copyright 2004-2022 H2 Group. Multiple-Licensed under the MPL 2.0,
  * and the EPL 1.0 (https://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
@@ -51,10 +51,10 @@ public abstract class RowFactory {
     }
 
     /**
-     * Create new row.
+     * Create a new row.
      *
      * @param data the values
-     * @param memory whether the row is in memory
+     * @param memory the estimated memory usage in bytes
      * @return the created row
      */
     public abstract Row createRow(Value[] data, int memory);
